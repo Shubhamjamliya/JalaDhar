@@ -467,11 +467,11 @@ const SEED_DATA = [
     code: 'gu',
     name: 'Gujarati',
     nativeName: 'ગુજરાતી',
-    isEnabled: false,
+    isEnabled: true,
     isRTL: false,
     scriptRange: '\\u0A80-\\u0AFF',
-    greetings: ['નમસ્તે', 'નમસ્કાર', 'હેલો', 'હાય'],
-    buttons: ['મારી બુકિંગ', 'પેમેન્ટ', 'મારો અહેવાલ', 'નિષ્ણાત ટ્રેક'],
+    greetings: ['નમસ્તે', 'નમસ્કાર', 'હેલો', 'હાય', 'કેમ છો'],
+    buttons: ['મારી બુકિંગ', 'ચુકવણી', 'સર્વે રિપોર્ટ', 'નિષ્ણાત ટ્રેક'],
     links: [
       { text: 'બુકિંગ જુઓ', url: '/user/status' },
       { text: 'સર્વે અહેવાલો', url: '/user/survey-reports' }
@@ -490,13 +490,53 @@ const SEED_DATA = [
       bookSurveyDesc:  'પ્રમાણિત હાઇડ્રોજ્યોલોજિસ્ટ સાથે સર્વેનું આયોજન કરો.',
       bookSurveyBtn:   'હવે સર્વે બૂક કરો'
     },
-    cardTranslations: [],
-    buttonLabelMap:   {},
-    synonyms:         [],
-    inferenceKeywords: {},
-    dateContextKeywords: [],
-    historyKeywords:  [],
-    bookingKeywords:  []
+    cardTranslations: [
+      { cardKey: 'payment',        title: 'ચુકવણી અને ઇનવોઇસ',              description: 'તમારા ૨૫% સર્વે એડવાન્સની ચુકવણી કરો, બાકી રકમ ચૂકવો અથવા સત્તાવાર જીએસટી ઇનવોઇસ ડાઉનલોડ કરો.', actionLabel: 'ચુકવણી પોર્ટલ ખોલો' },
+      { cardKey: 'pay now',        title: 'સર્વે ચુકવણી પૂર્ણ કરો',          description: 'તમારી સર્વે એડવાન્સ ડિપોઝિટ અથવા બાકી રકમ રેઝરપે દ્વારા સુરક્ષિત રીતે ચૂકવો.',                  actionLabel: 'હમણાં ચૂકવો' },
+      { cardKey: 'payment status', title: 'ચુકવણી ઇતિહાસ અને રસીદો',        description: 'તમારી લેવડ-દેવડ રસીદો, એડવાન્સ ચુકવણી કન્ફર્મેશન જુઓ અને જીએસટી ઇનવોઇસ ડાઉનલોડ કરો.',            actionLabel: 'ઇનવોઇસ અને રસીદો જુઓ' },
+      { cardKey: 'my booking',     title: 'મારી સર્વે બુકિંગ્સ',             description: 'તમારા સક્રિય અને ભૂતકાળના ભૂગર્ભ જળ સર્વે બુકિંગ, નિષ્ણાતની વિગતો અને સમયપત્રક જુઓ.',         actionLabel: 'મારી બુકિંગ્સ જુઓ' },
+      { cardKey: 'view booking',   title: 'સર્વે બુકિંગ્સ પોર્ટલ',           description: 'તમારી બુકિંગ વિગતો, સર્વે સરનામું, પેકેજ અને હાઇડ્રોજિયોલોજિસ્ટની વિગતો તપાસો.',              actionLabel: 'બુકિંગ સૂચિ ખોલો' },
+      { cardKey: 'view schedule',  title: 'આગામી સર્વે સમયપત્રક',           description: 'નિષ્ણાતની મુલાકાત માટે તમારી કન્ફર્મ થયેલ તારીખ અને સમય સ્લોટ તપાસો.',                         actionLabel: 'સર્વે સમયપત્રક જુઓ' },
+      { cardKey: 'track expert',   title: 'નિષ્ણાતનું લાઇવ જીપીએસ ટ્રેકિંગ', description: 'તમારા સ્થળ પર આવી રહેલા સર્વે નિષ્ણાતનું લાઇવ જીપીએસ લોકેશન નકશા પર ટ્રેક કરો.',            actionLabel: 'નિષ્ણાતને લાઇવ ટ્રેક કરો' },
+      { cardKey: 'my report',      title: 'પ્રમાણિત સર્વે અહેવાલો',          description: 'જીપીએસ ડ્રિલિંગ કોઓર્ડિનેટ્સ અને અંદાજિત ઊંડાઈ ધરાવતો સત્તાવાર સર્વે રિપોર્ટ (PDF) ડાઉનલોડ કરો.', actionLabel: 'સર્વે રિપોર્ટ ડાઉનલોડ કરો' },
+      { cardKey: 'view report',    title: 'સર્વે PDF ડાઉનલોડ કરો',           description: 'તમારો સત્તાવાર ડિજિટલ ભૂગર્ભ જળ સર્વે અહેવાલ અને બોરવેલ પોઇન્ટ ભલામણો મેળવો.',                actionLabel: 'રિપોર્ટ ડાઉનલોડ કરો' },
+      { cardKey: 'rate service',   title: 'સર્વે અનુભવને રેટ કરો',           description: 'તમારો સર્વે કરનાર ભૂગર્ભ જળ નિષ્ણાત માટે તમારું રેટિંગ અને પ્રતિસાદ સબમિટ કરો.',              actionLabel: 'નિષ્ણાતને રેટ કરો' },
+      { cardKey: 'support',        title: 'જળધારા હેલ્પલાઇન અને સહાયતા',     description: 'અમારી ગ્રાહક હેલ્પલાઇન +91 800-000-0000 પર કૉલ કરો અથવા સત્તાવાર ફરિયાદ ટિકિટ બનાવો.',       actionLabel: 'ફરિયાદ ટિકિટ બનાવો' },
+      { cardKey: 'main menu',      title: 'જળધારા મુખ્ય મેનૂ',               description: 'જળધારા ભૂગર્ભ જળ સર્વે સેવાઓમાં આપનું સ્વાગત છે. આજે અમે તમને કેવી રીતે મદદ કરી શકીએ?',       actionLabel: 'નવો સર્વે બૂક કરો' }
+    ],
+    buttonLabelMap: {
+      'Pay Now':        'હમણાં ચૂકવો',
+      'Payment Status': 'ચુકવણી સ્થિતિ',
+      'Main Menu':      'મુખ્ય મેનૂ',
+      'My Booking':     'મારી બુકિંગ',
+      'View Booking':   'બુકિંગ જુઓ',
+      'View Schedule':  'સમયપત્રક જુઓ',
+      'Track Expert':   'નિષ્ણાત ટ્રેક',
+      'View Report':    'રિપોર્ટ જુઓ',
+      'Rate Service':   'રેટિંગ આપો',
+      'Submit Report':  'રિપોર્ટ સબમિટ કરો',
+      'Payment':        'ચુકવણી',
+      'My Report':      'સર્વે રિપોર્ટ',
+      'Support':        'સહાયતા'
+    },
+    synonyms: [
+      { cardKey: 'payment',        keywords: ['ચુકવણી', 'પેમેન્ટ', 'પૈસા', 'બિલ', 'ઇનવોઇસ', 'રકમ', 'રસીદ'] },
+      { cardKey: 'my booking',     keywords: ['મારી બુકિંગ', 'બુકિંગ', 'ઓર્ડર', 'સર્વે'] },
+      { cardKey: 'my report',      keywords: ['રિપોર્ટ', 'અહેવાલ', 'પીડીએફ', 'પરિણામ'] },
+      { cardKey: 'track expert',   keywords: ['ટ્રેક', 'ક્યાં છે', 'નિષ્ણાત', 'લોકેશન', 'સ્થાન'] },
+      { cardKey: 'support',        keywords: ['સહાયતા', 'મદદ', 'હેલ્પલાઇન', 'ફરિયાદ', 'સમસ્યા'] },
+      { cardKey: 'main menu',      keywords: ['મેનૂ', 'મુખ્ય મેનૂ', 'શરૂઆત', 'નવો સર્વે'] }
+    ],
+    inferenceKeywords: {
+      payment: ['ચુકવણી', 'પેમેન્ટ', 'પૈસા', 'બિલ', 'ઇનવોઇસ'],
+      track:   ['ટ્રેક', 'ક્યાં છે', 'નિષ્ણાત', 'સ્થાન'],
+      report:  ['રિપોર્ટ', 'અહેવાલ', 'પીડીએફ'],
+      booking: ['બુકિંગ', 'ઓર્ડર', 'સર્વે'],
+      dispute: ['ફરિયાદ', 'સમસ્યા', 'સહાયતા']
+    },
+    dateContextKeywords: ['ગઈકાલે', 'આજે', 'આ મહિને', 'ગયા મહિને', 'તારીખે'],
+    historyKeywords:     ['ઇતિહાસ', 'બધા સર્વે', 'કેટલા સર્વે', 'કુલ સર્વે'],
+    bookingKeywords:     ['મારી બુકિંગ', 'બુકિંગ સ્થિતિ', 'સર્વે ક્યારે છે']
   },
 
   // ─────────────────────── PUNJABI ──────────────────────────────────────────

@@ -254,6 +254,38 @@ const loadConfig = async () => {
     for (const kw of lang.bookingKeywords       || []) BOOKING_KEYWORDS.add(kw.toLowerCase());
   }
 
+  // ── Seamlessly merge any newly added languages from LanguageConfig ──────
+  // Guarantees that when an admin adds any language in the Admin UI, the chatbot
+  // immediately supports it dynamically without requiring manual database seeding.
+  try {
+    const LanguageConfig = require('../models/LanguageConfig');
+    const primaryConfig = await LanguageConfig.findOne({ configKey: 'PRIMARY_LANGUAGE_CONFIG' }).lean();
+    if (primaryConfig && Array.isArray(primaryConfig.supportedLanguages)) {
+      for (const lang of primaryConfig.supportedLanguages) {
+        if (!lang.isEnabled) continue;
+        const code = lang.code.toLowerCase().trim();
+        if (!LANGUAGE_CONFIG[code]) {
+          LANGUAGE_CONFIG[code] = { name: lang.name, native: lang.nativeName };
+        }
+        if (!I18N[code]) {
+          I18N[code] = I18N.en;
+        }
+        if (SCRIPT_RANGES_BY_CODE[code] && !scriptDetectors.some(d => d.code === code)) {
+          try {
+            const regex = new RegExp(`[${SCRIPT_RANGES_BY_CODE[code]}]`);
+            scriptDetectors.push({ code, regex });
+          } catch {}
+        }
+        // If no ChatLanguage doc exists yet in DB, trigger auto-sync in background
+        if (!languages.some(l => l.code === code)) {
+          autoSyncChatLanguage(lang).catch(() => {});
+        }
+      }
+    }
+  } catch (err) {
+    // Non-blocking
+  }
+
   _cache = {
     LANGUAGE_CONFIG,
     scriptDetectors,
@@ -267,11 +299,14 @@ const loadConfig = async () => {
     DATE_CONTEXT_KEYWORDS,
     HISTORY_KEYWORDS,
     BOOKING_KEYWORDS,
-    enabledLanguageCodes: languages.filter(l => l.isEnabled).map(l => l.code)
+    enabledLanguageCodes: [
+      ...languages.filter(l => l.isEnabled).map(l => l.code),
+      ...Object.keys(LANGUAGE_CONFIG)
+    ]
   };
   _cacheExpiry = now + CACHE_TTL_MS;
 
-  console.log(`[ChatLanguageService] Loaded ${languages.length} language configs from DB. Cache valid for ${CACHE_TTL_MS / 1000}s.`);
+  console.log(`[ChatLanguageService] Loaded ${Object.keys(LANGUAGE_CONFIG).length} language configs from DB. Cache valid for ${CACHE_TTL_MS / 1000}s.`);
   return _cache;
 };
 
@@ -375,6 +410,111 @@ const buildEmptyConfig = () => ({
   enabledLanguageCodes: ['en']
 });
 
+const SCRIPT_RANGES_BY_CODE = {
+  te: '\\u0C00-\\u0C7F', // Telugu
+  hi: '\\u0900-\\u097F', // Hindi / Devanagari
+  mr: '\\u0900-\\u097F', // Marathi
+  gu: '\\u0A80-\\u0AFF', // Gujarati
+  ta: '\\u0B80-\\u0BFF', // Tamil
+  kn: '\\u0C80-\\u0CFF', // Kannada
+  ml: '\\u0D00-\\u0D7F', // Malayalam
+  bn: '\\u0980-\\u09FF', // Bengali
+  or: '\\u0B00-\\u0B7F', // Odia
+  pa: '\\u0A00-\\u0A7F', // Punjabi
+  ur: '\\u0600-\\u06FF', // Urdu
+  ar: '\\u0600-\\u06FF'  // Arabic
+};
+
+/**
+ * Automatically provision/translate chatbot support for a newly added language.
+ * Called automatically whenever an admin adds a language in Admin Settings.
+ * No manual seeder execution is ever needed!
+ */
+const autoSyncChatLanguage = async ({ code, name, nativeName }) => {
+  if (!code || code === 'en') return;
+  const cleanCode = code.toLowerCase().trim();
+
+  try {
+    const existing = await ChatLanguage.findOne({ code: cleanCode });
+    if (existing && existing.isEnabled && Array.isArray(existing.cardTranslations) && existing.cardTranslations.length > 0) {
+      return existing;
+    }
+
+    const englishDoc = await ChatLanguage.findOne({ code: 'en' });
+    if (!englishDoc) return;
+
+    const translationService = require('./translationService');
+
+    // Collect all texts to translate from English base
+    const textsToTranslate = [
+      'Hello', 'How can I assist you?',
+      'My Booking', 'Payment', 'My Report', 'Track Expert',
+      'Pay Now', 'Payment Status', 'Main Menu', 'View Booking', 'View Schedule',
+      'View Report', 'Rate Service', 'Support',
+      ...englishDoc.cardTranslations.map(c => c.title),
+      ...englishDoc.cardTranslations.map(c => c.description),
+      ...englishDoc.cardTranslations.map(c => c.actionLabel)
+    ];
+
+    const transMap = await translationService.batchTranslate(textsToTranslate, cleanCode, 'en');
+
+    const localizedCardTranslations = englishDoc.cardTranslations.map(c => ({
+      cardKey: c.cardKey,
+      title: transMap[c.title] || c.title,
+      description: transMap[c.description] || c.description,
+      actionLabel: transMap[c.actionLabel] || c.actionLabel
+    }));
+
+    const localizedButtons = englishDoc.buttons.map(b => transMap[b] || b);
+
+    const buttonLabelMap = {
+      'Pay Now': transMap['Pay Now'] || 'Pay Now',
+      'Payment Status': transMap['Payment Status'] || 'Payment Status',
+      'Main Menu': transMap['Main Menu'] || 'Main Menu',
+      'My Booking': transMap['My Booking'] || 'My Booking',
+      'View Booking': transMap['View Booking'] || 'View Booking',
+      'View Schedule': transMap['View Schedule'] || 'View Schedule',
+      'Track Expert': transMap['Track Expert'] || 'Track Expert',
+      'View Report': transMap['View Report'] || 'View Report',
+      'Rate Service': transMap['Rate Service'] || 'Rate Service',
+      'Payment': transMap['Payment'] || 'Payment',
+      'My Report': transMap['My Report'] || 'My Report',
+      'Support': transMap['Support'] || 'Support'
+    };
+
+    const scriptRange = SCRIPT_RANGES_BY_CODE[cleanCode] || '';
+
+    const doc = await ChatLanguage.findOneAndUpdate(
+      { code: cleanCode },
+      {
+        $set: {
+          code: cleanCode,
+          name: name || cleanCode,
+          nativeName: nativeName || name || cleanCode,
+          isEnabled: true,
+          isRTL: ['ar', 'ur', 'he', 'fa'].includes(cleanCode),
+          scriptRange,
+          greetings: [transMap['Hello'] || 'Hello', nativeName || cleanCode],
+          buttons: localizedButtons,
+          links: [
+            { text: transMap['View Booking'] || 'View Bookings', url: '/user/status' },
+            { text: transMap['View Report'] || 'Survey Reports', url: '/user/survey-reports' }
+          ],
+          cardTranslations: localizedCardTranslations,
+          buttonLabelMap
+        }
+      },
+      { upsert: true, new: true }
+    );
+
+    invalidateCache();
+    console.log(`[ChatLanguageService] Automatically provisioned chatbot language config for: ${cleanCode} (${name})`);
+    return doc;
+  } catch (err) {
+    console.warn(`[ChatLanguageService] Automatic chatbot language sync failed for ${cleanCode}:`, err.message);
+  }
+};
+
 // ─────────────────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -386,5 +526,6 @@ module.exports = {
   getI18N,
   getCardTranslation,
   translateButtons,
-  buildDefaultEnglishI18N
+  buildDefaultEnglishI18N,
+  autoSyncChatLanguage
 };

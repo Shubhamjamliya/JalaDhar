@@ -189,9 +189,83 @@ const extractLinks = (text = '') => {
 // ── Main chat handler ─────────────────────────────────────────────────────────
 
 /**
+ * Resilient Ollama Chat Caller:
+ * Automatically resolves endpoint (127.0.0.1 vs localhost) and model (llama3.2:latest vs qwen2.5:3b)
+ * to prevent 404 errors if local Ollama or the SSH tunnel differs from the .env config.
+ */
+const requestOllamaChat = async (messages) => {
+  const preferredUrl = process.env.OLLAMA_BASE_URL || 'http://localhost:11434';
+  const preferredModel = process.env.OLLAMA_MODEL || 'qwen2.5:3b';
+
+  const candidateEndpoints = [
+    { url: preferredUrl, model: preferredModel },
+    { url: 'http://localhost:11434', model: 'qwen2.5:3b' },
+    { url: 'http://127.0.0.1:11434', model: 'qwen2.5:3b' },
+    { url: 'http://127.0.0.1:11434', model: 'llama3.2:latest' }
+  ];
+
+  // Deduplicate endpoints
+  const endpoints = candidateEndpoints.filter((ep, idx, arr) =>
+    arr.findIndex(o => o.url === ep.url && o.model === ep.model) === idx
+  );
+
+  let lastError = null;
+
+  for (const ep of endpoints) {
+    try {
+      const response = await axios.post(
+        `${ep.url}/api/chat`,
+        {
+          model: ep.model,
+          messages,
+          stream: false,
+          options: { temperature: 0.3, top_p: 0.85, num_predict: 280 }
+        },
+        { timeout: 35000 }
+      );
+
+      const reply = response.data?.message?.content?.trim();
+      if (reply) {
+        return { reply, model: ep.model };
+      }
+    } catch (err) {
+      lastError = err;
+      // If 404 model not found or connection refused, query /api/tags to see what model is actually loaded
+      if (err.response?.status === 404 || err.code === 'ECONNREFUSED') {
+        try {
+          const tagsRes = await axios.get(`${ep.url}/api/tags`, { timeout: 3000 });
+          const availableModels = (tagsRes.data?.models || []).map(m => m.name);
+          if (availableModels.length > 0) {
+            const fallbackModel = availableModels.find(m => m.includes('qwen')) || availableModels.find(m => m.includes('llama')) || availableModels[0];
+            const retryRes = await axios.post(
+              `${ep.url}/api/chat`,
+              {
+                model: fallbackModel,
+                messages,
+                stream: false,
+                options: { temperature: 0.3, top_p: 0.85, num_predict: 280 }
+              },
+              { timeout: 35000 }
+            );
+            const retryReply = retryRes.data?.message?.content?.trim();
+            if (retryReply) {
+              return { reply: retryReply, model: fallbackModel };
+            }
+          }
+        } catch {
+          // Continue to next endpoint candidate
+        }
+      }
+    }
+  }
+
+  throw lastError || new Error('All Ollama endpoints failed');
+};
+
+/**
  * Process Support Chat via Hybrid Model:
  * 1. Instant Rich Action Cards for preset specification clicks (0ms latency, zero hallucinations)
- * 2. Generative AI via Ollama Qwen 2.5 3B for freeform questions with action card attachments
+ * 2. Generative AI via Ollama for freeform questions with action card attachments
  *
  * All language config is now loaded dynamically from MongoDB via chatLanguageService.
  */
@@ -200,6 +274,9 @@ const processSupportChat = async ({
   language = 'en',
   conversationHistory = [],
   liveBookings = [],
+  livePayments = [],
+  userWallet = { balance: 0, totalCredited: 0 },
+  recentWalletTransactions = [],
   userId = null,
   userName = null
 }) => {
@@ -359,10 +436,22 @@ const processSupportChat = async ({
     userBookingContext = `\nUSER CONTEXT: The user is currently logged in, but has 0 active bookings in the database. If they ask about their bookings, politely let them know they have no active surveys yet and offer to help them book one.`;
   }
 
-  const fullSystemPrompt = `${JALADHAARA_SYSTEM_PROMPT}\n${languageInstruction}\n${userProfileContext}\n${userBookingContext}`;
+  let userPaymentContext = '';
+  if (userId) {
+    userPaymentContext = `\nUSER'S REAL FINANCIAL & PAYMENT CONTEXT IN JALADHAARA:\n` +
+      `- Current Wallet Balance: ₹${userWallet?.balance || 0} (Total Credited / Refunded: ₹${userWallet?.totalCredited || 0})\n` +
+      `- Recent Payments Made (Sent) by User:\n` +
+      (Array.isArray(livePayments) && livePayments.length > 0
+        ? livePayments.map((p, i) => `  ${i + 1}. Amount: ₹${p.amount} (${p.type}), Status: ${p.status}, Date: ${new Date(p.date).toLocaleDateString()}, Booking: ${p.bookingId}`).join('\n')
+        : '  No sent payments recorded yet.') +
+      `\n- Recent Wallet / Refund Transactions Received:\n` +
+      (Array.isArray(recentWalletTransactions) && recentWalletTransactions.length > 0
+        ? recentWalletTransactions.map((w, i) => `  ${i + 1}. Amount: ₹${w.amount} (${w.type}), Status: ${w.status}, Date: ${new Date(w.date).toLocaleDateString()}, Note: ${w.description || 'Wallet credit'}`).join('\n')
+        : '  No received transactions/refunds recorded yet.') +
+      `\nWhen users ask about their payments sent, payments received, refunds, wallet balance, or invoices, use these EXACT figures! If they ask "what was my last payment sent and received", explicitly state their last payment sent amount and their last refund/received amount, and provide the link [Payments & Invoices](/user/payments-invoices).`;
+  }
 
-  const ollamaBaseUrl = process.env.OLLAMA_BASE_URL || 'http://127.0.0.1:11434';
-  const ollamaModel   = process.env.OLLAMA_MODEL    || 'llama3.2:latest';
+  const fullSystemPrompt = `${JALADHAARA_SYSTEM_PROMPT}\n${languageInstruction}\n${userProfileContext}\n${userBookingContext}\n${userPaymentContext}`;
 
   const messages = [{ role: 'system', content: fullSystemPrompt }];
 
@@ -379,13 +468,7 @@ const processSupportChat = async ({
   messages.push({ role: 'user', content: message });
 
   try {
-    const response = await axios.post(
-      `${ollamaBaseUrl}/api/chat`,
-      { model: ollamaModel, messages, stream: false, options: { temperature: 0.3, top_p: 0.85, num_predict: 250 } },
-      { timeout: 35000 }
-    );
-
-    const rawReply = response.data?.message?.content?.trim();
+    const { reply: rawReply, model: usedModel } = await requestOllamaChat(messages);
 
     if (rawReply) {
       const extractedLinks  = extractLinks(rawReply);
@@ -401,7 +484,7 @@ const processSupportChat = async ({
         actionCard: contextualCard,
         links: finalLinks,
         buttons: finalButtons,
-        model: ollamaModel,
+        model: usedModel,
         isAiPowered: true,
         language: langKey
       };
@@ -409,29 +492,58 @@ const processSupportChat = async ({
 
     throw new Error('Empty response received from Ollama model');
   } catch (err) {
-    console.warn(`[OllamaSupportService] Ollama chat unavailable (${err.message}). Using specification fallback.`);
+    console.warn(`[OllamaSupportService] Ollama chat unavailable (${err.message}). Using smart specification fallback.`);
 
-    // Fallback to main menu card
-    const mainMenuBase = SPECIFICATION_ACTION_CARDS_BASE['main menu'];
-    const mainMenuLocalized = langService.getCardTranslation('main menu', langKey, config);
-    const mainMenuEn = langService.getCardTranslation('main menu', 'en', config);
+    let fallbackCardKey = 'main menu';
+    let fbDesc = '';
 
-    const fbTitle = mainMenuLocalized.title || mainMenuEn.title || 'Jaladhaara Support';
-    const fbDesc  = mainMenuLocalized.description || mainMenuEn.description || 'Welcome to Jaladhaara Support. How can we assist with your survey today?';
-    const fbLabel = mainMenuLocalized.actionLabel  || mainMenuEn.actionLabel  || 'Open Portal';
+    const isPaymentQuery =
+      /\b(payment|paid|pay|sent|recieved|received|refund|wallet|invoice|fee|transaction)\b/i.test(cleanMsg) ||
+      /(చెల్లింపు|డబ్బు|రీఫండ్|వాలెట్)/.test(cleanMsg) ||
+      /(भुगतान|पैसे|रिफंड|वॉलेट)/.test(cleanMsg);
+
+    if (isPaymentQuery) {
+      fallbackCardKey = 'payment';
+      const lastSent = livePayments && livePayments[0];
+      const lastRecv = recentWalletTransactions && recentWalletTransactions[0];
+      if (lastSent || lastRecv) {
+        fbDesc = `Here is your payment overview:\n`;
+        if (lastSent) fbDesc += `• Last Payment Sent: ₹${lastSent.amount} (${lastSent.type}) on ${new Date(lastSent.date).toLocaleDateString()} [Status: ${lastSent.status}]\n`;
+        if (lastRecv) fbDesc += `• Last Received / Refund: ₹${lastRecv.amount} on ${new Date(lastRecv.date).toLocaleDateString()} [Status: ${lastRecv.status}]\n`;
+        fbDesc += `• Current Wallet Balance: ₹${userWallet?.balance || 0}\n\nView details in [Payments & Invoices](/user/payments-invoices).`;
+      } else {
+        fbDesc = `You currently have no recorded payments or refunds. Your wallet balance is ₹${userWallet?.balance || 0}. Manage your billing in [Payments & Invoices](/user/payments-invoices).`;
+      }
+    } else if (/\b(dispute|complaint|issue|problem|help|ticket)\b/i.test(cleanMsg)) {
+      fallbackCardKey = 'support';
+    } else if (/\b(report|pdf|download|document)\b/i.test(cleanMsg)) {
+      fallbackCardKey = 'my report';
+    } else if (/\b(track|expert|location|status|where)\b/i.test(cleanMsg)) {
+      fallbackCardKey = 'track expert';
+    }
+
+    const fallbackBase = SPECIFICATION_ACTION_CARDS_BASE[fallbackCardKey] || SPECIFICATION_ACTION_CARDS_BASE['main menu'];
+    const fallbackLocalized = langService.getCardTranslation(fallbackCardKey, langKey, config);
+    const fallbackEn = langService.getCardTranslation(fallbackCardKey, 'en', config);
+
+    const fbTitle = fallbackLocalized.title || fallbackEn.title || 'Jaladhaara Support';
+    if (!fbDesc) {
+      fbDesc = fallbackLocalized.description || fallbackEn.description || 'Welcome to Jaladhaara Support. How can we assist with your survey today?';
+    }
+    const fbLabel = fallbackLocalized.actionLabel || fallbackEn.actionLabel || 'Open';
 
     return {
       success: true,
       reply: fbDesc,
       actionCard: {
         title: fbTitle,
-        description: fbDesc,
-        icon: mainMenuBase.icon,
-        primaryAction: { label: fbLabel, url: mainMenuBase.url }
+        description: fallbackLocalized.description || fallbackEn.description || fbDesc,
+        icon: fallbackBase.icon,
+        primaryAction: { label: fbLabel, url: fallbackBase.url }
       },
-      links: [{ text: fbLabel, url: mainMenuBase.url }],
-      buttons: langService.translateButtons(mainMenuBase.buttons, langKey, config),
-      model: 'specification-fallback',
+      links: [{ text: fbLabel, url: fallbackBase.url }],
+      buttons: langService.translateButtons(fallbackBase.buttons, langKey, config),
+      model: 'smart-specification-fallback',
       isAiPowered: false,
       language: langKey
     };

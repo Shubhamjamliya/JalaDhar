@@ -25,6 +25,9 @@ const handleSupportChat = async (req, res) => {
     let userId = null;
     let userName = req.body.userName || null;
     let liveBookings = [];
+    let livePayments = [];
+    let userWallet = { balance: 0, totalCredited: 0 };
+    let recentWalletTransactions = [];
     let token = null;
 
     if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -39,12 +42,18 @@ const handleSupportChat = async (req, res) => {
         if (decoded && decoded.userId) {
           userId = decoded.userId;
 
-          // Fetch user profile for name personalization if not provided by client
-          if (!userName) {
-            const User = require('../models/User');
-            const userDoc = await User.findById(userId).select('name phone email').lean();
-            if (userDoc && userDoc.name) {
+          // Fetch user profile for name personalization and wallet balance
+          const User = require('../models/User');
+          const userDoc = await User.findById(userId).select('name phone email wallet').lean();
+          if (userDoc) {
+            if (!userName && userDoc.name) {
               userName = userDoc.name;
+            }
+            if (userDoc.wallet) {
+              userWallet = {
+                balance: Number(userDoc.wallet.walletBalance || 0),
+                totalCredited: Number(userDoc.wallet.totalCredited || 0)
+              };
             }
           }
 
@@ -81,6 +90,40 @@ const handleSupportChat = async (req, res) => {
               totalAmount: b.payment?.totalAmount || 6000
             };
           });
+
+          // Fetch user's recent payments (sent)
+          const Payment = require('../models/Payment');
+          const paymentDocs = await Payment.find({ user: userId })
+            .populate('booking', 'bookingId surveyCategory')
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .lean();
+
+          livePayments = paymentDocs.map((p) => ({
+            id: p._id.toString(),
+            type: p.paymentType,
+            amount: p.amount,
+            status: p.status,
+            date: p.paidAt || p.createdAt,
+            bookingId: p.booking?.bookingId || 'Survey',
+            method: p.method,
+            razorpayPaymentId: p.razorpayPaymentId
+          }));
+
+          // Fetch recent wallet transactions (refunds received / withdrawals)
+          const UserWalletTransaction = require('../models/UserWalletTransaction');
+          const walletDocs = await UserWalletTransaction.find({ user: userId })
+            .sort({ createdAt: -1 })
+            .limit(5)
+            .lean();
+
+          recentWalletTransactions = walletDocs.map((w) => ({
+            type: w.type,
+            amount: w.amount,
+            status: w.status,
+            date: w.createdAt,
+            description: w.description
+          }));
         }
       } catch (authErr) {
         // Token expired or invalid - proceed gracefully as guest
@@ -93,6 +136,9 @@ const handleSupportChat = async (req, res) => {
       language: typeof language === 'string' ? language : 'en',
       conversationHistory: Array.isArray(conversationHistory) ? conversationHistory : [],
       liveBookings,
+      livePayments,
+      userWallet,
+      recentWalletTransactions,
       userId,
       userName
     });

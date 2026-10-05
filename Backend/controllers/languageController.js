@@ -643,6 +643,13 @@ const addSupportedLanguage = async (req, res) => {
       }
     }
 
+    // Automatically provision AI chatbot language support (card translations, greetings, buttons)
+    // Runs automatically in the background without needing any manual seeding
+    const chatLangService = require('../services/chatLanguageService');
+    chatLangService.autoSyncChatLanguage({ code: cleanCode, name, nativeName }).catch(e => {
+      console.warn('[addSupportedLanguage] Chatbot auto-sync warning:', e.message);
+    });
+
     res.json({
       success: true,
       message: `Language '${name} (${nativeName})' added successfully.${autoTranslatedCount > 0 ? ` Translated ${autoTranslatedCount} platform keys using Google Maps API.` : ''}`,
@@ -707,6 +714,9 @@ const deleteSupportedLanguage = async (req, res) => {
         await item.save();
       }
     }
+
+    const ChatLanguage = require('../models/ChatLanguage');
+    await ChatLanguage.deleteOne({ code }).catch(() => {});
 
     res.json({
       success: true,

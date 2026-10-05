@@ -582,6 +582,10 @@ function App() {
                                                                 }
                                                             />
                                                             <Route
+                                                                path="/payments"
+                                                                element={<Navigate to="/user/payments-invoices" replace />}
+                                                            />
+                                                            <Route
                                                                 path="/notifications"
                                                                 element={
                                                                     <Suspense fallback={<LoadingSpinner />}>
