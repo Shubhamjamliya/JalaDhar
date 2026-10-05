@@ -79,72 +79,43 @@ export default function VendorHelpSupport() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-4 pb-16">
-      {/* 24/7 AI-Powered Support Hero Card */}
-      <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-md border border-blue-900/40 relative overflow-hidden">
+      {/* 24/7 AI-Powered Support Banner - Compact & Professional */}
+      <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-indigo-950 rounded-2xl p-3.5 sm:p-4 text-white shadow-md border border-blue-900/40 relative overflow-hidden">
         {/* Subtle background glow accents */}
-        <div className="absolute -top-12 -right-12 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -top-10 -right-10 w-36 h-36 bg-blue-500/15 rounded-full blur-2xl pointer-events-none" />
 
-        <div className="relative z-10 space-y-3">
-          {/* Status badge row */}
-          <div className="flex items-center justify-between">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-500/20 border border-blue-400/30 text-blue-300 text-[11px] font-bold">
-              <IoSparkles className="text-amber-400 text-xs" />
-              <span>24/7 Jaladhaara AI (Expert Assistant)</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+        <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            {/* AI Sparkle Icon Avatar */}
+            <div className="w-10 h-10 rounded-xl bg-blue-500/20 border border-blue-400/30 flex items-center justify-center text-blue-300 shrink-0">
+              <IoSparkles className="text-xl text-amber-300" />
             </div>
-            <span className="text-[11px] text-emerald-400 font-semibold hidden sm:inline-flex items-center gap-1">
-              ● Online &amp; Ready
-            </span>
-          </div>
 
-          {/* Title and description */}
-          <div>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">
-              Need Field Help? Chat with Jaladhaara AI
-            </h2>
-            <p className="text-slate-300 text-xs sm:text-sm font-normal mt-1 leading-relaxed max-w-xl">
-              Instant answers for assigned bookings, customer site navigation, report upload requirements, wallet payouts, and dispute resolutions.
-            </p>
-          </div>
-
-          {/* Quick Prompts & CTA Row */}
-          <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {/* Primary Launch Button */}
-            <button
-              onClick={() => navigate("/vendor/support-chat")}
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
-            >
-              <IoChatbubblesOutline className="text-base" />
-              <span>Start AI Live Chat</span>
-              <IoArrowForward className="text-sm" />
-            </button>
-
-            {/* Quick Topic Chips */}
-            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-              <button
-                onClick={() => navigate("/vendor/support-chat")}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 cursor-pointer"
-              >
-                <IoDocumentTextOutline className="text-xs text-blue-400" />
-                <span>Assigned Bookings</span>
-              </button>
-              <button
-                onClick={() => navigate("/vendor/support-chat")}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 cursor-pointer"
-              >
-                <IoWalletOutline className="text-xs text-emerald-400" />
-                <span>Wallet &amp; Payouts</span>
-              </button>
-              <button
-                onClick={() => navigate("/vendor/support-chat")}
-                className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1 cursor-pointer"
-              >
-                <IoAlertCircleOutline className="text-xs text-amber-400" />
-                <span>Disputes</span>
-              </button>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm sm:text-base font-bold text-white tracking-tight truncate">
+                  Chat with Jaladhaara AI
+                </h2>
+                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30 shrink-0">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  Online
+                </span>
+              </div>
+              <p className="text-[11px] sm:text-xs text-slate-300 truncate mt-0.5">
+                24/7 partner support for assigned bookings &amp; payouts
+              </p>
             </div>
           </div>
+
+          {/* CTA Button */}
+          <button
+            onClick={() => navigate("/vendor/support-chat")}
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 whitespace-nowrap"
+          >
+            <IoChatbubblesOutline className="text-base" />
+            <span>Start Live Chat</span>
+            <IoArrowForward className="text-sm" />
+          </button>
         </div>
       </div>
 
