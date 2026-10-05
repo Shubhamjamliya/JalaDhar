@@ -28,7 +28,9 @@ import {
     IoCarOutline,
     IoPersonOutline,
     IoEyeOutline,
-    IoChevronForwardOutline
+    IoChevronForwardOutline,
+    IoChevronDownOutline,
+    IoChevronUpOutline
 } from "react-icons/io5";
 import {
     HiOutlineHome,
@@ -67,6 +69,7 @@ export default function UserDashboard() {
     const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL', 'PENDING_PAYMENT', or 'REPORTS'
     const [requestStatuses, setRequestStatuses] = useState([]);
     const [vendors, setVendors] = useState([]);
+    const [visibleVendorCount, setVisibleVendorCount] = useState(5);
     const [userLocation, setUserLocation] = useState({ lat: null, lng: null, address: null });
     const [radius, setRadius] = useState(50);
     const [searchAddress, setSearchAddress] = useState("");
@@ -398,6 +401,7 @@ export default function UserDashboard() {
                 }
 
                 setUserLocation(newLocation);
+                setVisibleVendorCount(5);
                 localStorage.setItem("userLocation", JSON.stringify(newLocation));
                 setGettingLocation(false);
             },
@@ -435,6 +439,7 @@ export default function UserDashboard() {
 
         setUserLocation(newLocation);
         setSearchAddress(newLocation.address);
+        setVisibleVendorCount(5);
         localStorage.setItem("userLocation", JSON.stringify(newLocation));
     };
 
@@ -1009,14 +1014,46 @@ export default function UserDashboard() {
                         <p className="text-gray-500 text-sm font-semibold">{t('noExpertsNearby', 'No groundwater experts available nearby')}</p>
                     </div>
                 ) : (
-                    vendors.slice(0, 5).map((vendor) => (
-                        <ExpertProfileCard
-                            key={vendor._id}
-                            expert={vendor}
-                            actionLabel={t('viewProfile', 'View Profile')}
-                            onSelect={() => navigate(`/user/vendor-profile/${vendor._id}`)}
-                        />
-                    ))
+                    <>
+                        {vendors.slice(0, visibleVendorCount).map((vendor) => (
+                            <ExpertProfileCard
+                                key={vendor._id}
+                                expert={vendor}
+                                actionLabel={t('viewProfile', 'View Profile')}
+                                onSelect={() => navigate(`/user/vendor-profile/${vendor._id}`)}
+                            />
+                        ))}
+
+                        {/* Load More / Show Less Pagination Controls */}
+                        {vendors.length > visibleVendorCount ? (
+                            <div className="pt-1 flex items-center justify-center">
+                                <button
+                                    type="button"
+                                    onClick={() => setVisibleVendorCount((prev) => prev + 5)}
+                                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-white hover:bg-blue-50/50 active:scale-98 text-[#0A84FF] text-xs font-bold rounded-xl border border-blue-200/80 shadow-xs hover:border-blue-300 transition-all cursor-pointer"
+                                >
+                                    <span>{t('loadMoreExperts', 'Load More Experts')}</span>
+                                    <span className="text-[11px] text-gray-400 font-semibold">
+                                        ({Math.min(visibleVendorCount, vendors.length)} of {vendors.length})
+                                    </span>
+                                    <IoChevronDownOutline className="text-sm shrink-0" />
+                                </button>
+                            </div>
+                        ) : (
+                            vendors.length > 5 && (
+                                <div className="pt-1 flex items-center justify-center">
+                                    <button
+                                        type="button"
+                                        onClick={() => setVisibleVendorCount(5)}
+                                        className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-gray-500 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 rounded-xl transition-all cursor-pointer"
+                                    >
+                                        <span>{t('showLess', 'Show Less')}</span>
+                                        <IoChevronUpOutline className="text-xs shrink-0" />
+                                    </button>
+                                </div>
+                            )
+                        )}
+                    </>
                 )}
             </div>
 
