@@ -132,20 +132,38 @@ export default function UserNavbar() {
 
         const updateHeight = () => {
             if (el) {
-                document.documentElement.style.setProperty('--user-header-height', `${el.offsetHeight}px`);
+                const rect = el.getBoundingClientRect();
+                const height = Math.round(rect.height || el.offsetHeight);
+                if (height > 0) {
+                    document.documentElement.style.setProperty('--user-header-height', `${height}px`);
+                }
             }
         };
 
         updateHeight();
         const ro = new ResizeObserver(updateHeight);
         ro.observe(el);
+
+        // Catch dynamic sub-components (like LandingNoticeSpotlight loading asynchronously)
+        const mo = new MutationObserver(updateHeight);
+        mo.observe(el, { childList: true, subtree: true, attributes: true });
+
         window.addEventListener('resize', updateHeight);
+
+        // Timed recalculations to catch async notice render delays
+        const t1 = setTimeout(updateHeight, 80);
+        const t2 = setTimeout(updateHeight, 300);
+        const t3 = setTimeout(updateHeight, 800);
 
         return () => {
             ro.disconnect();
+            mo.disconnect();
             window.removeEventListener('resize', updateHeight);
+            clearTimeout(t1);
+            clearTimeout(t2);
+            clearTimeout(t3);
         };
-    }, []);
+    }, [location.pathname]);
 
     // Close language dropdown on outside click or touch
     useEffect(() => {

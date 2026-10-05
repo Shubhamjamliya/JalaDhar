@@ -44,7 +44,7 @@ export default function LandingNoticeSpotlight({ variant = 'subnav', portal = 'l
     showVendor: false,
     type: 'warning'
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   let socket = null;
   try {

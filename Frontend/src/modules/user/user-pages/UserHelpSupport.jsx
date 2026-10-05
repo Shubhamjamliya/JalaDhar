@@ -1,20 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-    IoHelpCircleOutline,
     IoCallOutline,
     IoMailOutline,
-    IoLogoWhatsapp,
     IoAlertCircleOutline,
     IoChevronDownOutline,
     IoChevronUpOutline,
     IoShieldCheckmarkOutline,
-    IoDocumentTextOutline,
-    IoHeadsetOutline,
     IoBulbOutline,
     IoSparkles,
     IoChatbubblesOutline,
-    IoArrowForward
+    IoArrowForward,
+    IoSearchOutline,
+    IoNavigateOutline,
+    IoReceiptOutline,
+    IoDocumentTextOutline,
+    IoWaterOutline
 } from "react-icons/io5";
 import PageContainer from "../../shared/components/PageContainer";
 import PolicyModal from "../../shared/components/PolicyModal";
@@ -66,6 +67,7 @@ export default function UserHelpSupport() {
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState(null);
     const [activePolicy, setActivePolicy] = useState(null);
+    const [faqSearch, setFaqSearch] = useState("");
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -75,176 +77,239 @@ export default function UserHelpSupport() {
         setOpenFaq(openFaq === index ? null : index);
     };
 
+    const filteredFaqs = useMemo(() => {
+        const query = faqSearch.trim().toLowerCase();
+        if (!query) return FAQS;
+        return FAQS.filter(
+            (f) =>
+                f.q.toLowerCase().includes(query) ||
+                f.a.toLowerCase().includes(query)
+        );
+    }, [faqSearch]);
+
     return (
         <PageContainer title="Help & Support">
-            <div className="max-w-4xl mx-auto space-y-6">
-                {/* Header Banner */}
-                <div className="bg-gradient-to-r from-purple-600 to-indigo-700 rounded-3xl p-6 text-white shadow-lg">
-                    <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2.5 bg-white/20 backdrop-blur-md rounded-2xl">
-                            <IoHelpCircleOutline className="text-2xl text-white" />
+            <div className="max-w-4xl mx-auto space-y-3.5 sm:space-y-4 pt-3 sm:pt-4 pb-8">
+                {/* 24/7 AI-Powered Support Hero Card */}
+                <div className="bg-gradient-to-br from-slate-900 via-indigo-950 to-purple-950 rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-white shadow-md border border-indigo-900/40 relative overflow-hidden">
+                    {/* Subtle background glow accents */}
+                    <div className="absolute -top-12 -right-12 w-48 h-48 bg-purple-500/10 rounded-full blur-2xl pointer-events-none" />
+                    <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
+
+                    <div className="relative z-10 space-y-3">
+                        {/* Status badge row */}
+                        <div className="flex items-center justify-between">
+                            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-[11px] font-bold">
+                                <IoSparkles className="text-amber-400 text-xs" />
+                                <span>24/7 Jaladhaara AI</span>
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-0.5" />
+                            </div>
+                            <span className="text-[11px] text-emerald-400 font-semibold hidden sm:inline-flex items-center gap-1">
+                                ● Online &amp; Ready
+                            </span>
                         </div>
-                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white">Customer Support &amp; FAQs</h1>
+
+                        {/* Title and description */}
+                        <div>
+                            <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white">
+                                Need Help? Chat with Jaladhaara AI
+                            </h1>
+                            <p className="text-slate-300 text-xs sm:text-sm font-normal mt-1 leading-relaxed max-w-xl">
+                                Instant answers for booking status, expert live tracking, payment invoices, and groundwater survey reports.
+                            </p>
+                        </div>
+
+                        {/* Quick Prompts & CTA Row */}
+                        <div className="pt-1 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            {/* Primary Launch Button */}
+                            <button
+                                onClick={() => navigate("/user/support-chat")}
+                                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0"
+                            >
+                                <IoChatbubblesOutline className="text-base" />
+                                <span>Start AI Live Chat</span>
+                                <IoArrowForward className="text-sm" />
+                            </button>
+
+                            {/* Quick Topic Chips */}
+                            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+                                <button
+                                    onClick={() => navigate("/user/support-chat")}
+                                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1"
+                                >
+                                    <IoNavigateOutline className="text-xs text-blue-400" />
+                                    <span>Live Tracking</span>
+                                </button>
+                                <button
+                                    onClick={() => navigate("/user/support-chat")}
+                                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1"
+                                >
+                                    <IoReceiptOutline className="text-xs text-emerald-400" />
+                                    <span>Payments</span>
+                                </button>
+                                <button
+                                    onClick={() => navigate("/user/support-chat")}
+                                    className="px-2.5 py-1 rounded-lg bg-white/10 hover:bg-white/15 border border-white/10 text-[11px] font-semibold text-slate-200 transition-colors whitespace-nowrap shrink-0 flex items-center gap-1"
+                                >
+                                    <IoDocumentTextOutline className="text-xs text-purple-400" />
+                                    <span>Reports</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <p className="text-purple-100 text-sm max-w-xl">
-                        Have questions or need assistance with your booking? We are here to support you 24/7.
-                    </p>
                 </div>
 
-                {/* Contact Helpline Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* 3-Column Quick Helpline Action Grid */}
+                <div className="grid grid-cols-3 gap-2 sm:gap-3">
                     <a
                         href="tel:+918000000000"
-                        className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group"
+                        className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-100 shadow-2xs hover:shadow-xs hover:border-blue-200 transition-all flex flex-col items-center text-center group cursor-pointer active:scale-98"
                     >
-                        <div className="p-3 bg-blue-50 text-blue-600 rounded-2xl group-hover:scale-110 transition-transform">
-                            <IoCallOutline className="text-2xl" />
+                        <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl mb-1.5 group-hover:scale-105 transition-transform shrink-0">
+                            <IoCallOutline />
                         </div>
-                        <div>
-                            <span className="text-xs text-gray-400 font-semibold block">Customer Helpline</span>
-                            <span className="text-sm font-bold text-gray-900">+91 800-000-0000</span>
-                        </div>
+                        <span className="text-[11px] sm:text-xs font-bold text-slate-900 leading-tight">Customer Call</span>
+                        <span className="text-[10px] sm:text-xs text-blue-600 font-semibold mt-0.5 truncate max-w-full">
+                            1800-000-0000
+                        </span>
                     </a>
 
                     <a
                         href="mailto:info@jaladhaaraapp.com"
-                        className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group"
+                        className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-100 shadow-2xs hover:shadow-xs hover:border-purple-200 transition-all flex flex-col items-center text-center group cursor-pointer active:scale-98"
                     >
-                        <div className="p-3 bg-purple-50 text-purple-600 rounded-2xl group-hover:scale-110 transition-transform">
-                            <IoMailOutline className="text-2xl" />
+                        <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xl mb-1.5 group-hover:scale-105 transition-transform shrink-0">
+                            <IoMailOutline />
                         </div>
-                        <div>
-                            <span className="text-xs text-gray-400 font-semibold block">Email Support</span>
-                            <span className="text-sm font-bold text-gray-900">info@jaladhaaraapp.com</span>
-                        </div>
+                        <span className="text-[11px] sm:text-xs font-bold text-slate-900 leading-tight">Email Support</span>
+                        <span className="text-[10px] sm:text-xs text-purple-600 font-semibold mt-0.5 truncate max-w-full">
+                            Quick Reply
+                        </span>
                     </a>
 
                     <button
                         onClick={() => navigate("/user/disputes/create")}
-                        className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group text-left"
+                        className="bg-white p-3 sm:p-3.5 rounded-2xl border border-slate-100 shadow-2xs hover:shadow-xs hover:border-orange-200 transition-all flex flex-col items-center text-center group cursor-pointer active:scale-98"
                     >
-                        <div className="p-3 bg-orange-50 text-orange-600 rounded-2xl group-hover:scale-110 transition-transform">
-                            <IoAlertCircleOutline className="text-2xl" />
+                        <div className="w-10 h-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-xl mb-1.5 group-hover:scale-105 transition-transform shrink-0">
+                            <IoAlertCircleOutline />
                         </div>
-                        <div>
-                            <span className="text-xs text-gray-400 font-semibold block">Raise Issue</span>
-                            <span className="text-sm font-bold text-gray-900">Create Dispute Ticket</span>
-                        </div>
+                        <span className="text-[11px] sm:text-xs font-bold text-slate-900 leading-tight">Raise Issue</span>
+                        <span className="text-[10px] sm:text-xs text-orange-600 font-semibold mt-0.5 truncate max-w-full">
+                            File Ticket
+                        </span>
                     </button>
                 </div>
 
-                {/* AI Support Assistant Launch Card */}
-                <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 rounded-3xl p-6 sm:p-7 text-white shadow-md border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-5 relative overflow-hidden">
-                    <div className="space-y-2 relative z-10 max-w-xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/20 border border-purple-400/30 text-purple-300 text-xs font-bold">
-                            <IoSparkles className="text-amber-400 text-xs" />
-                            <span>24/7 AI-Powered Support</span>
-                        </div>
-                        <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                            Need Instant Answers? Chat with Jaladhaara AI
-                        </h2>
-                        <p className="text-slate-300 text-xs sm:text-sm font-medium leading-relaxed">
-                            Get immediate answers on survey schedule, live expert tracking, payment invoices, and groundwater depth estimation in your language.
-                        </p>
+                {/* Company Policies & Legal Information */}
+                <div className="bg-white rounded-2xl p-3.5 sm:p-4 border border-slate-100 shadow-2xs">
+                    <div className="flex items-center gap-2 mb-2.5">
+                        <IoShieldCheckmarkOutline className="text-purple-600 text-base sm:text-lg" />
+                        <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                            Platform Policies &amp; Terms
+                        </h3>
                     </div>
 
-                    <button
-                        onClick={() => navigate("/user/support-chat")}
-                        className="relative z-10 px-5 py-3 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg hover:scale-102 active:scale-98 transition-all flex items-center gap-2.5 cursor-pointer shrink-0"
-                    >
-                        <IoChatbubblesOutline className="text-lg" />
-                        <span>Start AI Live Chat</span>
-                        <IoArrowForward className="text-base" />
-                    </button>
-                </div>
-
-                {/* Company Policies */}
-                <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm">
-                    <h3 className="text-base font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        <IoShieldCheckmarkOutline className="text-purple-600 text-xl" />
-                        Platform Policies & Legal Information
-                    </h3>
-
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
                         <button
                             onClick={() => setActivePolicy("user_agreement")}
-                            className="p-3 bg-blue-50 hover:bg-blue-100 border border-blue-100 rounded-2xl text-center text-xs font-black text-blue-900 transition-all col-span-2 md:col-span-1"
+                            className="py-2 px-2.5 bg-blue-50/80 hover:bg-blue-100/80 border border-blue-100 rounded-xl text-center text-[11px] sm:text-xs font-bold text-blue-900 transition-all col-span-2 sm:col-span-1 active:scale-98 cursor-pointer"
                         >
                             User Agreement
                         </button>
                         <button
                             onClick={() => setActivePolicy("terms")}
-                            className="p-3 bg-gray-50 hover:bg-purple-50 border border-gray-100 rounded-2xl text-center text-xs font-bold text-gray-700 hover:text-purple-700 transition-all"
+                            className="py-2 px-2.5 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-slate-100 rounded-xl text-center text-[11px] sm:text-xs font-semibold text-slate-700 transition-all active:scale-98 cursor-pointer"
                         >
                             Terms of Service
                         </button>
                         <button
                             onClick={() => setActivePolicy("privacy")}
-                            className="p-3 bg-gray-50 hover:bg-purple-50 border border-gray-100 rounded-2xl text-center text-xs font-bold text-gray-700 hover:text-purple-700 transition-all"
+                            className="py-2 px-2.5 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-slate-100 rounded-xl text-center text-[11px] sm:text-xs font-semibold text-slate-700 transition-all active:scale-98 cursor-pointer"
                         >
                             Privacy Policy
                         </button>
                         <button
                             onClick={() => setActivePolicy("cancellation")}
-                            className="p-3 bg-gray-50 hover:bg-purple-50 border border-gray-100 rounded-2xl text-center text-xs font-bold text-gray-700 hover:text-purple-700 transition-all"
+                            className="py-2 px-2.5 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-slate-100 rounded-xl text-center text-[11px] sm:text-xs font-semibold text-slate-700 transition-all active:scale-98 cursor-pointer"
                         >
-                            Cancellation Policy
+                            Cancellation
                         </button>
                         <button
                             onClick={() => setActivePolicy("refund")}
-                            className="p-3 bg-gray-50 hover:bg-purple-50 border border-gray-100 rounded-2xl text-center text-xs font-bold text-gray-700 hover:text-purple-700 transition-all"
+                            className="py-2 px-2.5 bg-slate-50 hover:bg-purple-50 hover:text-purple-700 border border-slate-100 rounded-xl text-center text-[11px] sm:text-xs font-semibold text-slate-700 transition-all active:scale-98 cursor-pointer"
                         >
                             Refund Policy
                         </button>
                     </div>
                 </div>
 
-                {/* FAQs Section — Pixel Perfect Match with Design Mockup */}
-                <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-xs space-y-6">
-                    {/* Header with Title and Lightbulb Icon */}
-                    <div className="flex items-start justify-between">
+                {/* FAQs Section */}
+                <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-100 shadow-2xs space-y-3">
+                    {/* Header */}
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                         <div>
-                            <h2 className="text-2xl font-black text-slate-900 tracking-tight">FAQs</h2>
-                            <p className="text-sm font-semibold text-slate-500 mt-0.5">Frequently Asked Questions</p>
+                            <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">FAQs</h2>
+                            <p className="text-xs text-slate-500">Frequently Asked Questions</p>
                         </div>
-                        <div className="w-10 h-10 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-500 shadow-xs">
-                            <IoBulbOutline className="text-2xl" />
+                        <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200/80 flex items-center justify-center text-amber-500 shrink-0">
+                            <IoBulbOutline className="text-lg" />
                         </div>
                     </div>
 
-                    {/* Accordion List */}
-                    <div className="space-y-3">
-                        {FAQS.map((faq, idx) => {
-                            const isOpen = openFaq === idx;
-                            return (
-                                <div
-                                    key={idx}
-                                    className={`border rounded-2xl transition-all overflow-hidden ${
-                                        isOpen ? "border-slate-300 shadow-sm bg-slate-50/40" : "border-slate-200/80 hover:border-slate-300 bg-white"
-                                    }`}
-                                >
-                                    <button
-                                        onClick={() => toggleFaq(idx)}
-                                        className="w-full p-4 text-left font-bold text-sm text-slate-800 flex items-center justify-between gap-4 transition-colors cursor-pointer"
-                                    >
-                                        <span className="leading-snug">Q{idx + 1}. {faq.q}</span>
-                                        <div className="p-1 rounded-full text-slate-400 transition-colors">
-                                            {isOpen ? (
-                                                <IoChevronUpOutline className="text-lg text-slate-600" />
-                                            ) : (
-                                                <IoChevronDownOutline className="text-lg" />
-                                            )}
-                                        </div>
-                                    </button>
+                    {/* FAQ Search */}
+                    <div className="relative">
+                        <IoSearchOutline className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm" />
+                        <input
+                            type="text"
+                            value={faqSearch}
+                            onChange={(e) => setFaqSearch(e.target.value)}
+                            placeholder="Search questions or keywords..."
+                            className="w-full pl-9 pr-3 py-2 bg-slate-50 rounded-xl border border-slate-200/80 text-xs text-slate-800 placeholder:text-slate-400 focus:outline-none focus:border-blue-400 transition-colors"
+                        />
+                    </div>
 
-                                    {isOpen && (
-                                        <div className="px-4 pb-4 pt-1 text-xs text-slate-600 leading-relaxed border-t border-slate-100 bg-white">
-                                            {faq.a}
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
+                    {/* Accordion List */}
+                    <div className="space-y-2 pt-1">
+                        {filteredFaqs.length === 0 ? (
+                            <div className="text-center py-6 text-xs text-slate-400">
+                                No questions found matching "{faqSearch}"
+                            </div>
+                        ) : (
+                            filteredFaqs.map((faq, idx) => {
+                                const isOpen = openFaq === idx;
+                                return (
+                                    <div
+                                        key={idx}
+                                        className={`border rounded-xl transition-all overflow-hidden ${
+                                            isOpen
+                                                ? "border-slate-300 shadow-2xs bg-slate-50/50"
+                                                : "border-slate-100 hover:border-slate-200 bg-white"
+                                        }`}
+                                    >
+                                        <button
+                                            onClick={() => toggleFaq(idx)}
+                                            className="w-full p-3 sm:p-3.5 text-left font-semibold text-xs sm:text-sm text-slate-800 flex items-center justify-between gap-3 transition-colors cursor-pointer"
+                                        >
+                                            <span className="leading-snug">{faq.q}</span>
+                                            <div className="p-1 rounded-full text-slate-400 shrink-0">
+                                                {isOpen ? (
+                                                    <IoChevronUpOutline className="text-base text-slate-600" />
+                                                ) : (
+                                                    <IoChevronDownOutline className="text-base" />
+                                                )}
+                                            </div>
+                                        </button>
+
+                                        {isOpen && (
+                                            <div className="px-3 sm:px-3.5 pb-3 text-xs text-slate-600 leading-relaxed border-t border-slate-100 bg-white pt-2">
+                                                {faq.a}
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
                 </div>
             </div>
@@ -253,21 +318,6 @@ export default function UserHelpSupport() {
             {activePolicy && (
                 <PolicyModal type={activePolicy} onClose={() => setActivePolicy(null)} />
             )}
-
-            {/* Floating AI Assistant Button */}
-            <button
-                onClick={() => navigate("/user/support-chat")}
-                className="fixed bottom-6 right-6 z-40 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-4 py-3 rounded-full shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center gap-2.5 border-2 border-white/20 backdrop-blur-md cursor-pointer group"
-                title="Chat with 24/7 AI Assistant"
-            >
-                <div className="relative">
-                    <IoSparkles className="text-amber-300 text-lg group-hover:rotate-12 transition-transform" />
-                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-400 rounded-full border border-white animate-pulse" />
-                </div>
-                <span className="text-xs sm:text-sm font-extrabold tracking-wide">
-                    AI Support
-                </span>
-            </button>
         </PageContainer>
     );
 }

@@ -18,6 +18,11 @@
   --shadow-soft-button: 0 6px 15px rgba(26, 128, 229, 0.25);
 }
 
+:root {
+  --user-header-height: 108px;
+  --vendor-header-height: 108px;
+}
+
 html {
   scroll-behavior: smooth;
 }
