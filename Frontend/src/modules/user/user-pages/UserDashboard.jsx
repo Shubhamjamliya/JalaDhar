@@ -1003,7 +1003,7 @@ export default function UserDashboard() {
                 </button>
             </div>
 
-            <div className="flex flex-col gap-3.5 mb-8 px-1">
+            <div className="flex flex-col gap-2.5 mb-6 px-1">
                 {vendors.length === 0 ? (
                     <div className="bg-white rounded-2xl p-8 text-center shadow-xs border border-gray-100">
                         <p className="text-gray-500 text-sm font-semibold">{t('noExpertsNearby', 'No groundwater experts available nearby')}</p>
