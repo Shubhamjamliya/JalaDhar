@@ -693,15 +693,15 @@ export default function UserDashboard() {
             </section>
 
             {/* Survey Categories Header */}
-            <div className="px-1 pt-4 pb-2 flex items-center justify-between">
+            <div className="px-1 pt-2.5 pb-1 flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">{t('surveyPurpose', 'Survey Purpose')}</h2>
-                    <p className="text-xs text-gray-500 font-semibold mt-0.5">{t('selectSiteCategory', 'Select your site category to begin survey booking.')}</p>
+                    <h2 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">{t('surveyPurpose', 'Survey Purpose')}</h2>
+                    <p className="text-[11px] sm:text-xs text-gray-500 font-semibold mt-0.5">{t('selectSiteCategory', 'Select your site category to begin survey booking.')}</p>
                 </div>
             </div>
 
             {/* Category Cards — 4 Grid Items matching Survey Flow */}
-            <div className="mt-2 mb-6 grid grid-cols-2 gap-3.5">
+            <div className="mt-1.5 mb-3.5 grid grid-cols-2 gap-2.5">
                 {[
                     { id: "Agriculture", label: t('agriculture', 'Agriculture'), icon: IoLeafOutline, color: "from-emerald-50 to-teal-50", iconColor: "text-emerald-600 bg-emerald-100/80", border: "border-emerald-200/60" },
                     { id: "Household", label: t('household', 'Household'), icon: HiOutlineHome, color: "from-blue-50 to-indigo-50", iconColor: "text-[#0A84FF] bg-blue-100/80", border: "border-blue-200/60" },
@@ -713,21 +713,21 @@ export default function UserDashboard() {
                         onClick={() => {
                             navigate("/user/survey", { state: { category: cat.id } });
                         }}
-                        className={`group relative flex flex-col items-center justify-center p-5 bg-gradient-to-br ${cat.color} rounded-2xl border ${cat.border} shadow-xs hover:shadow-md active:scale-[0.97] transition-all duration-200 text-center`}
+                        className={`group relative flex flex-col items-center justify-center p-3 sm:p-3.5 bg-gradient-to-br ${cat.color} rounded-2xl border ${cat.border} shadow-xs hover:shadow-md active:scale-[0.97] transition-all duration-200 text-center`}
                     >
-                        <div className={`p-3.5 rounded-2xl ${cat.iconColor} mb-2.5 transition-transform duration-200 group-hover:scale-110 shadow-2xs`}>
-                            <cat.icon className="text-2xl" />
+                        <div className={`p-2 rounded-xl ${cat.iconColor} mb-1.5 transition-transform duration-200 group-hover:scale-110 shadow-2xs`}>
+                            <cat.icon className="text-xl sm:text-2xl" />
                         </div>
-                        <span className="font-extrabold text-gray-900 text-sm tracking-tight">{cat.label}</span>
+                        <span className="font-extrabold text-gray-900 text-xs sm:text-sm tracking-tight">{cat.label}</span>
                     </button>
                 ))}
             </div>
 
             {/* Services Overview / Quick Access */}
-            <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
+            <h2 className="px-1 pt-1 pb-2 text-base sm:text-lg font-black text-gray-900 tracking-tight">
                 {t('quickAccess', 'Quick Access')}
             </h2>
-            <div className="grid grid-cols-5 gap-1 mb-6 px-1">
+            <div className="grid grid-cols-5 gap-1 mb-5 px-1">
                 {/* Booking Status */}
                 <div
                     onClick={() => navigate("/user/status")}
@@ -836,11 +836,11 @@ export default function UserDashboard() {
 
                     return (
                         <>
-                            <h2 className="px-2 pt-4 pb-4 text-lg font-bold text-gray-800">
+                            <h2 className="px-1 pt-2 pb-1.5 text-base sm:text-lg font-black text-gray-900 tracking-tight">
                                 Booking in Progress
                             </h2>
-                            <div className="mx-2 mb-6 bg-white rounded-[16px] p-6 shadow-[0_4px_12px_rgba(0,0,0,0.08)]">
-                                <div className="flex items-center justify-between mb-4">
+                            <div className="mx-1 mb-4 bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-gray-100">
+                                <div className="flex items-center justify-between mb-3">
                                     <div>
                                         <h3 className="font-bold text-gray-800">{activeBooking.serviceType}</h3>
                                         <p className="text-xs text-gray-500">Booking ID: #{activeBooking.id.toString().slice(-4).toUpperCase()}</p>
@@ -970,27 +970,27 @@ export default function UserDashboard() {
             }
 
             {/* Top Verified Experts Near You */}
-            <div className="px-1 pt-6 pb-2 flex items-center justify-between">
+            <div className="px-1 pt-3 pb-1.5 flex items-center justify-between">
                 <div>
-                    <h2 className="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
+                    <h2 className="text-base sm:text-lg font-black text-gray-900 tracking-tight">
                         {t('topExpertsNearYou', 'Top "Verified" Groundwater Experts Near You')} 👨‍🔧
                     </h2>
-                    <p className="text-xs text-gray-500 font-semibold mt-0.5">{t('certifiedSpecialists', 'Certified groundwater survey specialists available for dispatch.')}</p>
+                    <p className="text-[11px] sm:text-xs text-gray-500 font-semibold mt-0.5">{t('certifiedSpecialists', 'Certified groundwater survey specialists available for dispatch.')}</p>
                 </div>
             </div>
 
             {/* Location Selector */}
-            <div className="px-1 mb-4 flex gap-2.5">
+            <div className="px-1 mb-3 flex gap-2">
                 {/* Address Input with Autocomplete */}
                 <div className="relative flex-1">
-                    <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-lg z-10" />
+                    <IoSearchOutline className="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400 text-base z-10" />
                     <PlaceAutocompleteInput
                         onPlaceSelect={handlePlaceSelect}
                         placeholder={t('searchAddressPlaceholder', 'Search address to filter nearby experts...')}
                         value={searchAddress}
                         onChange={(e) => setSearchAddress(e.target.value)}
                         disabled={false}
-                        className="w-full rounded-2xl border border-gray-200/80 bg-white py-3 pl-10 pr-4 text-sm text-gray-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all"
+                        className="w-full rounded-2xl border border-gray-200/80 bg-white py-2.5 pl-9 pr-3.5 text-xs sm:text-sm text-gray-800 shadow-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100 focus:shadow-md transition-all"
                         countryRestriction="in"
                         types={["geocode"]}
                     />
@@ -1001,14 +1001,14 @@ export default function UserDashboard() {
                     type="button"
                     onClick={getCurrentLocation}
                     disabled={gettingLocation}
-                    className="flex items-center justify-center bg-[#0A84FF] text-white p-3 rounded-2xl hover:bg-[#0070DF] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-blue-200 active:scale-95 shrink-0"
+                    className="flex items-center justify-center bg-[#0A84FF] text-white p-2.5 rounded-2xl hover:bg-[#0070DF] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md shadow-blue-200 active:scale-95 shrink-0"
                     title={gettingLocation ? "Getting location..." : "Use Current Location"}
                 >
-                    <IoLocationOutline className="text-xl text-white" />
+                    <IoLocationOutline className="text-lg sm:text-xl text-white" />
                 </button>
             </div>
 
-            <div className="flex flex-col gap-2.5 mb-6 px-1">
+            <div className="flex flex-col gap-2 mb-5 px-1">
                 {vendors.length === 0 ? (
                     <div className="bg-white rounded-2xl p-8 text-center shadow-xs border border-gray-100">
                         <p className="text-gray-500 text-sm font-semibold">{t('noExpertsNearby', 'No groundwater experts available nearby')}</p>
@@ -1058,7 +1058,7 @@ export default function UserDashboard() {
             </div>
 
             {/* Geoscientific Instruments Survey Disclaimer Banner */}
-            <div className="mx-1 mb-6 p-3.5 sm:p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-2xl text-white shadow-md relative overflow-hidden border border-slate-700/50">
+            <div className="mx-1 mb-5 p-3.5 sm:p-4 bg-gradient-to-r from-slate-900 via-slate-800 to-blue-950 rounded-2xl text-white shadow-md relative overflow-hidden border border-slate-700/50">
                 <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-blue-500/20 rounded-full blur-2xl pointer-events-none"></div>
                 <div className="relative z-10">
                     <div className="flex items-center gap-3 mb-2.5">
