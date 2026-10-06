@@ -19,16 +19,51 @@ import {
     IoGiftOutline,
     IoChevronForwardOutline,
     IoSparkles,
-    IoAlertCircleOutline
+    IoAlertCircleOutline,
+    IoGlobeOutline,
+    IoChevronDown
 } from "react-icons/io5";
 import { useVendorAuth } from "../../../contexts/VendorAuthContext";
+import { useLanguage } from "../../../contexts/LanguageContext";
 import ConfirmModal from "../../shared/components/ConfirmModal";
 
 export default function VendorSidebar({ isOpen, onClose }) {
     const closeRef = useRef(null);
+    const langDropdownRef = useRef(null);
     const location = useLocation();
     const { logout, vendor } = useVendorAuth();
+    const { language, setLanguage, supportedLanguages, isLanguageEnabled } = useLanguage();
+    const currentLangObj = supportedLanguages.find(l => l.code === language) || supportedLanguages[0];
     const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+    const [showLangMenu, setShowLangMenu] = useState(false);
+    const [langAccordionOpen, setLangAccordionOpen] = useState(false);
+
+    // Close language dropdown on outside click or touch
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (langDropdownRef.current && !langDropdownRef.current.contains(event.target)) {
+                setShowLangMenu(false);
+            }
+        };
+
+        if (showLangMenu) {
+            document.addEventListener("mousedown", handleClickOutside);
+            document.addEventListener("touchstart", handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            document.removeEventListener("touchstart", handleClickOutside);
+        };
+    }, [showLangMenu]);
+
+    // Reset dropdowns when sidebar closes
+    useEffect(() => {
+        if (!isOpen) {
+            setShowLangMenu(false);
+            setLangAccordionOpen(false);
+        }
+    }, [isOpen]);
 
     // Auto-close on route change
     useEffect(() => {
@@ -156,18 +191,71 @@ export default function VendorSidebar({ isOpen, onClose }) {
                 {/* Fixed Header */}
                 <div className="p-5 shrink-0 bg-white">
                     <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-[22px] font-black text-[#0A84FF] tracking-tight">
+                        <h2 className="text-[20px] font-black text-[#0A84FF] tracking-tight">
                             Expert Menu
                         </h2>
 
-                        <button
-                            ref={closeRef}
-                            onClick={onClose}
-                            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors active:scale-95 cursor-pointer"
-                            aria-label="Close Menu"
-                        >
-                            <IoCloseOutline className="text-xl" />
-                        </button>
+                        <div className="flex items-center gap-2">
+                            {/* Language Switcher Pill */}
+                            {isLanguageEnabled && (
+                                <div className="relative" ref={langDropdownRef}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowLangMenu((prev) => !prev)}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 text-xs font-bold text-slate-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                        title="Change Language"
+                                        aria-label="Change Language"
+                                    >
+                                        <IoGlobeOutline className="text-[#0A84FF] text-base shrink-0" />
+                                        <span className="text-xs font-bold text-slate-700">{currentLangObj.nativeName}</span>
+                                    </button>
+
+                                    {showLangMenu && (
+                                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 space-y-1 max-h-60 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 custom-scrollbar">
+                                            <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1 flex items-center justify-between">
+                                                <span>Select Language</span>
+                                                <span className="text-[10px] text-slate-400 font-medium">भाषा चुनें</span>
+                                            </div>
+                                            {supportedLanguages.map((lang) => {
+                                                const isSelected = language === lang.code;
+                                                return (
+                                                    <button
+                                                        key={lang.code}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setLanguage(lang.code);
+                                                            setShowLangMenu(false);
+                                                        }}
+                                                        className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition-colors text-left cursor-pointer ${
+                                                            isSelected
+                                                                ? "bg-blue-50 text-[#0A84FF]"
+                                                                : "text-slate-700 hover:bg-slate-50"
+                                                        }`}
+                                                    >
+                                                        <span className="flex items-center gap-2">
+                                                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${isSelected ? 'bg-[#0A84FF] text-white' : 'bg-slate-100 text-slate-600'}`}>
+                                                                {lang.badge || lang.code.toUpperCase()}
+                                                            </span>
+                                                            <span>{lang.nativeName}</span>
+                                                        </span>
+                                                        <span className="text-[10px] text-slate-400 font-mono">{lang.name}</span>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            <button
+                                ref={closeRef}
+                                onClick={onClose}
+                                className="w-8.5 h-8.5 flex items-center justify-center rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 transition-colors active:scale-95 cursor-pointer"
+                                aria-label="Close Menu"
+                            >
+                                <IoCloseOutline className="text-xl" />
+                            </button>
+                        </div>
                     </div>
 
                     {/* Expert Profile Card */}
@@ -266,6 +354,71 @@ export default function VendorSidebar({ isOpen, onClose }) {
                                 </nav>
                             </div>
                         ))}
+
+                        {/* Regional Language Section */}
+                        {isLanguageEnabled && (
+                            <div className="pt-3 pb-1 border-t border-slate-100">
+                                <span className="block px-3 pb-1.5 text-[10px] font-black uppercase tracking-wider text-slate-400">
+                                    Language / क्षेत्रीय भाषा
+                                </span>
+                                <button
+                                    type="button"
+                                    onClick={() => setLangAccordionOpen(prev => !prev)}
+                                    className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition-all cursor-pointer shadow-2xs group"
+                                >
+                                    <div className="flex items-center gap-2.5 min-w-0">
+                                        <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#0A84FF] text-white shadow-2xs shrink-0">
+                                            <IoGlobeOutline className="text-sm" />
+                                        </div>
+                                        <div className="text-left min-w-0">
+                                            <span className="text-xs sm:text-[13px] font-bold text-slate-800 block truncate">
+                                                {currentLangObj.nativeName}
+                                            </span>
+                                            <span className="text-[10px] text-slate-400 block font-normal truncate">
+                                                {currentLangObj.name}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <span className="text-[10px] font-bold text-[#0A84FF] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                                            {currentLangObj.badge || currentLangObj.code.toUpperCase()}
+                                        </span>
+                                        <IoChevronDown className={`text-slate-400 text-xs transition-transform duration-200 ${langAccordionOpen ? 'rotate-180' : ''}`} />
+                                    </div>
+                                </button>
+
+                                {langAccordionOpen && (
+                                    <div className="mt-1.5 bg-slate-50/80 rounded-xl border border-slate-200/80 p-1.5 space-y-1 max-h-48 overflow-y-auto custom-scrollbar animate-in fade-in duration-150">
+                                        {supportedLanguages.map((lang) => {
+                                            const isSelected = language === lang.code;
+                                            return (
+                                                <button
+                                                    key={lang.code}
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setLanguage(lang.code);
+                                                        setLangAccordionOpen(false);
+                                                    }}
+                                                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all text-left cursor-pointer ${
+                                                        isSelected
+                                                            ? 'bg-blue-50 text-[#0A84FF] border border-blue-200/60 shadow-2xs'
+                                                            : 'text-slate-700 hover:bg-white'
+                                                    }`}
+                                                >
+                                                    <span className="flex items-center gap-2">
+                                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${isSelected ? 'bg-[#0A84FF] text-white' : 'bg-slate-200/80 text-slate-600'}`}>
+                                                            {lang.badge || lang.code.toUpperCase()}
+                                                        </span>
+                                                        <span>{lang.nativeName}</span>
+                                                    </span>
+                                                    <span className="text-[10px] text-slate-400 font-mono font-normal">{lang.name}</span>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
 
