@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { AlertTriangle, Info, CheckCircle2 } from 'lucide-react';
 import { getPublicSettings } from '../../../services/settingsApi';
 import { useNotifications } from '../../../contexts/NotificationContext';
+import useBookingAvailability from '../../../hooks/useBookingAvailability';
 
 const THEMES = {
   warning: {
@@ -45,6 +46,10 @@ export default function LandingNoticeSpotlight({ variant = 'subnav', portal = 'l
     type: 'warning'
   });
   const [loading, setLoading] = useState(false);
+
+  // Booking Controls (Admin → Settings → Booking Controls) take priority while bookings are paused,
+  // so the banner can never contradict the reopen message customers see in the app.
+  const bookingPaused = useBookingAvailability();
 
   let socket = null;
   try {
@@ -135,11 +140,17 @@ export default function LandingNoticeSpotlight({ variant = 'subnav', portal = 'l
     (portal === 'user' && noticeSettings.showUser) ||
     (portal === 'vendor' && noticeSettings.showVendor);
 
-  const isVisible = !loading && noticeSettings.enabled && isPortalActive;
+  // Booking-paused notice: shown on landing + user portals (not the expert portal)
+  const showBookingNotice =
+    !!bookingPaused && bookingPaused.popupEnabled !== false && portal !== 'vendor';
+
+  const isVisible = showBookingNotice || (!loading && noticeSettings.enabled && isPortalActive);
 
   if (!isVisible) return null;
 
-  const currentTheme = THEMES[noticeSettings.type] || THEMES.warning;
+  const bannerText = showBookingNotice ? bookingPaused.message : noticeSettings.text;
+
+  const currentTheme = showBookingNotice ? THEMES.warning : (THEMES[noticeSettings.type] || THEMES.warning);
   const IconComponent = currentTheme.icon;
 
   return (
@@ -151,7 +162,7 @@ export default function LandingNoticeSpotlight({ variant = 'subnav', portal = 'l
         <IconComponent className={`w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 inline-block -mt-0.5 ${currentTheme.iconClass}`} />
         <p className="leading-snug">
           <strong className={`font-bold mr-1 ${currentTheme.badgeClass}`}>Notice:</strong>
-          <span className={`font-semibold ${currentTheme.textClass}`}>{noticeSettings.text}</span>
+          <span className={`font-semibold ${currentTheme.textClass}`}>{bannerText}</span>
         </p>
       </div>
     </aside>
