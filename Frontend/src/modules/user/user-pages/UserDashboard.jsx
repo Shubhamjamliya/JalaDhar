@@ -52,7 +52,6 @@ import { useToast } from "../../../hooks/useToast";
 import { handleApiError } from "../../../utils/toastHelper";
 import PlaceAutocompleteInput from "../../../components/PlaceAutocompleteInput";
 import ExpertProfileCard from "../components/ExpertProfileCard";
-import { getPublicSettings } from "../../../services/settingsApi";
 
 const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "";
 
@@ -88,8 +87,6 @@ export default function UserDashboard() {
     const [showCancelConfirm, setShowCancelConfirm] = useState(false);
     const [cancellationReason, setCancellationReason] = useState("");
 
-    // Booking Availability State
-    const [bookingDisabledConfig, setBookingDisabledConfig] = useState(null);
     const [cancelling, setCancelling] = useState(false);
     const [selectedBookingForAction, setSelectedBookingForAction] = useState(null);
     const [showPaymentPrompt, setShowPaymentPrompt] = useState(false);
@@ -145,41 +142,6 @@ export default function UserDashboard() {
         document.head.appendChild(script);
     }, []);
 
-    // Check if new survey bookings are disabled platform-wide
-    useEffect(() => {
-        const checkBookingAvailability = async () => {
-            try {
-                const res = await getPublicSettings('general');
-                if (res?.success && res.data?.settings) {
-                    const allowSetting = res.data.settings.find(s => s.key === 'ALLOW_NEW_BOOKINGS');
-                    const isAllowed = allowSetting ? (allowSetting.value === true || allowSetting.value === 'true' || allowSetting.value === 1 || allowSetting.value === '1') : false;
-
-                    if (!isAllowed) {
-                        const popupEnabled = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_ENABLED');
-                        const popupTitle = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_POPUP_TITLE');
-                        const popupMsg = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_MESSAGE');
-                        const reopenDate = res.data.settings.find(s => s.key === 'BOOKING_REOPEN_DATE');
-                        const popupDesc = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_DESCRIPTION');
-                        const popupBtn = res.data.settings.find(s => s.key === 'BOOKING_DISABLED_BUTTON_TEXT');
-
-                        const config = {
-                            title: popupTitle?.value || "Survey Bookings Opening Soon",
-                            message: popupMsg?.value || "Bookings will be open from Nov. 1 onwards",
-                            reopenDate: reopenDate?.value || "1st November, 2026",
-                            description: popupDesc?.value || "We are currently onboarding verified hydrogeologists and calibrating scientific survey equipment for the new season. Booking will officially open on November 1st. In the meantime, you can explore services and sample survey reports.",
-                            buttonText: popupBtn?.value || "Got it, Explore Platform",
-                            popupEnabled: popupEnabled ? (popupEnabled.value === true || popupEnabled.value === 'true' || popupEnabled.value === 1 || popupEnabled.value === '1') : true
-                        };
-
-                        setBookingDisabledConfig(config);
-                    }
-                }
-            } catch (err) {
-                console.warn("Could not load booking availability:", err);
-            }
-        };
-        checkBookingAvailability();
-    }, []);
 
     // Load saved location from localStorage
     useEffect(() => {
