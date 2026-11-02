@@ -18,6 +18,9 @@ export const useNotifications = () => {
   return context;
 };
 
+/** Like useNotifications, but returns null instead of throwing outside the provider (e.g. public pages). */
+export const useOptionalNotifications = () => useContext(NotificationContext) || null;
+
 export const NotificationProvider = ({ children }) => {
   const [socket, setSocket] = useState(null);
   const [notifications, setNotifications] = useState([]);
