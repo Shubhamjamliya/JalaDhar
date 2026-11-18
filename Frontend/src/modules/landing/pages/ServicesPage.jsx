@@ -136,6 +136,17 @@ export default function ServicesPage() {
   const { cms } = useLandingContent();
   const [openFaq, setOpenFaq] = useState(null);
 
+  const dynamicServices = cms('services', []);
+  const mergedSectors = sectorDetails.map((sector, idx) => {
+    const cmsItem = Array.isArray(dynamicServices) ? dynamicServices[idx] : null;
+    return {
+      ...sector,
+      title: cmsItem?.title || sector.title,
+      desc: cmsItem?.description || sector.desc,
+      image: cmsItem?.image?.url || sector.image
+    };
+  });
+
   useEffect(() => {
     document.title = "Groundwater Survey Services | Jaladhaara";
     window.scrollTo(0, 0);
@@ -174,7 +185,7 @@ export default function ServicesPage() {
 
         {/* In-depth 4 Sectors */}
         <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-7xl mx-auto mb-16 sm:mb-20 space-y-12 sm:space-y-16">
-          {sectorDetails.map((sector, idx) => {
+          {mergedSectors.map((sector, idx) => {
             const isEven = idx % 2 === 0;
             const Icon = sector.icon;
             return (

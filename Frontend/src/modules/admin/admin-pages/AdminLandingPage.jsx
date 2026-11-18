@@ -1077,48 +1077,58 @@ export default function AdminLandingPage() {
         )}
       </AnimatePresence>
 
-      {/* Layout */}
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Sidebar */}
-        <aside className="w-full lg:w-64 shrink-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-3 space-y-1 sticky top-28">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-3 py-2">Sections</p>
-            {SECTIONS.map(s => (
-              <SectionTab key={s.id} id={s.id} label={s.label} icon={s.icon} active={activeSection === s.id} onClick={id => { setActiveSection(id); setSaveStatus(null); }} />
-            ))}
-          </div>
-        </aside>
-
-        {/* Editor Panel */}
-        <main className="flex-1 min-w-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
-            <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-              <span className="text-2xl">{SECTIONS.find(s => s.id === activeSection)?.icon}</span>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900">{activeLabel}</h2>
-                <p className="text-xs text-slate-500">Make changes below, then click "Save {activeLabel}"</p>
-              </div>
-            </div>
-            <AnimatePresence mode="wait">
-              <motion.div key={activeSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.18 }}>
-                {renderEditor()}
-              </motion.div>
-            </AnimatePresence>
-            <div className="mt-8 pt-5 border-t border-slate-100 flex justify-end">
+      {/* Horizontal Sections Segmented Tab Bar */}
+      <div className="mb-6 overflow-x-auto pb-1 scrollbar-none">
+        <div className="inline-flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 shadow-2xs">
+          {SECTIONS.map(s => {
+            const isActive = activeSection === s.id;
+            return (
               <button
-                onClick={handleSave}
-                disabled={saving}
-                className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md ${
-                  saving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
-                } text-white`}
+                key={s.id}
+                onClick={() => { setActiveSection(s.id); setSaveStatus(null); }}
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all duration-150 cursor-pointer ${
+                  isActive
+                    ? 'bg-blue-600 text-white shadow-xs font-extrabold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/70'
+                }`}
               >
-                {saving ? <IoRefreshOutline className="animate-spin" /> : <IoSaveOutline />}
-                {saving ? 'Saving...' : `Save ${activeLabel}`}
+                <span className="text-sm shrink-0">{s.icon}</span>
+                <span>{s.label}</span>
               </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Editor Panel (Full Width) */}
+      <main className="w-full">
+        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
+          <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
+            <span className="text-2xl">{SECTIONS.find(s => s.id === activeSection)?.icon}</span>
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">{activeLabel}</h2>
+              <p className="text-xs text-slate-500">Make changes below, then click "Save {activeLabel}"</p>
             </div>
           </div>
-        </main>
-      </div>
+          <AnimatePresence mode="wait">
+            <motion.div key={activeSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.18 }}>
+              {renderEditor()}
+            </motion.div>
+          </AnimatePresence>
+          <div className="mt-8 pt-5 border-t border-slate-100 flex justify-end">
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-md ${
+                saving ? 'bg-blue-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20 active:scale-95'
+              } text-white`}
+            >
+              {saving ? <IoRefreshOutline className="animate-spin" /> : <IoSaveOutline />}
+              {saving ? 'Saving...' : `Save ${activeLabel}`}
+            </button>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

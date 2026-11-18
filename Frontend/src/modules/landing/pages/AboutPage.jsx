@@ -74,7 +74,7 @@ export default function AboutPage() {
                   </p>
                 </div>
 
-                {/* Academic Qualifications */}
+                {/* Academic Qualifications & Experience */}
                 <div className="flex flex-wrap items-center gap-2 mb-4 sm:mb-5">
                   <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-blue-50 text-[var(--color-primary)] border border-blue-100 text-[11px] sm:text-sm font-bold shadow-xs">
                     <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
@@ -84,12 +84,25 @@ export default function AboutPage() {
                     <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-emerald-600" />
                     <span>{cms('founder.educationBadge2', 'M.Sc. Environmental Science (BRAOU)')}</span>
                   </span>
+                  {cms('founder.experienceBadge') && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-lg sm:rounded-xl bg-purple-50 text-purple-800 border border-purple-200/70 text-[11px] sm:text-sm font-bold shadow-xs">
+                      <Award className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0 text-purple-600" />
+                      <span>{cms('founder.experienceBadge', '14+ Years of Professional Experience')}</span>
+                    </span>
+                  )}
                 </div>
 
                 {/* Bio Narrative */}
                 <p className="text-xs sm:text-base text-[var(--color-text-secondary)] leading-relaxed font-normal">
                   {cms('founder.bio', 'With extensive field experience in groundwater assessment, Bommala Anjaiah brings a strong geophysical foundation to Jaladhaara and its technology-driven approach to groundwater exploration.')}
                 </p>
+
+                {/* Founder Quote */}
+                {cms('founder.quote') && (
+                  <blockquote className="mt-4 p-3.5 sm:p-4 rounded-xl bg-blue-50/70 border-l-4 border-[var(--color-primary)] text-xs sm:text-sm text-slate-700 italic font-medium">
+                    "{cms('founder.quote')}"
+                  </blockquote>
+                )}
 
                 {/* Vision & Approach Cards */}
                 <div className="mt-4 sm:mt-6 grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
@@ -131,6 +144,20 @@ export default function AboutPage() {
             </div>
           </div>
         </section>
+
+        {/* Dynamic Platform Stats Strip */}
+        {Array.isArray(cms('stats')) && cms('stats').length > 0 && (
+          <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-6xl mx-auto mb-10 sm:mb-14">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+              {cms('stats').map((st, i) => (
+                <div key={i} className="p-4 sm:p-5 rounded-2xl bg-white/90 border border-slate-200/80 text-center shadow-xs">
+                  <div className="text-2xl sm:text-3xl font-black text-[var(--color-primary)] font-display">{st.number}</div>
+                  <div className="text-[11px] sm:text-xs font-bold text-slate-700 mt-1">{st.label}</div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* The Problem & Our Mission */}
         <section className="px-4 sm:px-6 lg:px-8 xl:px-12 w-full max-w-7xl mx-auto mb-10 sm:mb-16">

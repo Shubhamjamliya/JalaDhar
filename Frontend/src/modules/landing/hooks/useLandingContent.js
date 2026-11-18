@@ -9,8 +9,11 @@ export function useLandingContent() {
     let isMounted = true;
     getLandingContent()
       .then((res) => {
-        if (isMounted && res?.data?.content) {
-          setContent(res.data.content);
+        if (isMounted) {
+          const payload = res?.data?.content || res?.data;
+          if (payload && typeof payload === 'object') {
+            setContent(payload);
+          }
         }
       })
       .catch((err) => {
@@ -37,7 +40,9 @@ export function useLandingContent() {
           return fallback;
         }
       }
-      return val !== undefined && val !== null ? val : fallback;
+      if (val === '' || val === null || val === undefined) return fallback;
+      if (Array.isArray(val) && val.length === 0) return fallback;
+      return val;
     },
     [content]
   );

@@ -197,8 +197,45 @@ export default function HowItWorksPage() {
     window.scrollTo(0, 0);
   }, []);
 
-  const steps = activeTab === 'customers' ? customerSteps : expertSteps;
+  const defaultIcons = [Smartphone, MapPin, Search, Activity, FileCheck];
+  const dynamicCustSteps = cms('howItWorksCustomers.steps', []);
+  const resolvedCustSteps = Array.isArray(dynamicCustSteps) && dynamicCustSteps.length > 0
+    ? dynamicCustSteps.map((s, idx) => ({
+        step: s.step || `0${idx + 1}`,
+        title: s.title,
+        desc: s.desc,
+        icon: customerSteps[idx]?.icon || defaultIcons[idx % defaultIcons.length]
+      }))
+    : customerSteps;
+
+  const dynamicExpertSteps = cms('howItWorksExperts.steps', []);
+  const resolvedExpertSteps = Array.isArray(dynamicExpertSteps) && dynamicExpertSteps.length > 0
+    ? dynamicExpertSteps.map((s, idx) => ({
+        step: s.step || `0${idx + 1}`,
+        title: s.title,
+        desc: s.desc,
+        icon: expertSteps[idx]?.icon || defaultIcons[idx % defaultIcons.length]
+      }))
+    : expertSteps;
+
+  const steps = activeTab === 'customers' ? resolvedCustSteps : resolvedExpertSteps;
   const currentFaqs = faqTab === 'customers' ? customerFaqs : expertFaqs;
+
+  const activeEyebrow = activeTab === 'customers'
+    ? cms('howItWorksCustomers.eyebrow', 'Simple, Transparent & Scientific')
+    : cms('howItWorksExperts.eyebrow', 'For Experts');
+
+  const activeHeading1 = activeTab === 'customers'
+    ? cms('howItWorksCustomers.heading1', 'How Jaladhaara Works')
+    : cms('howItWorksExperts.heading1', 'Grow Your Practice');
+
+  const activeHeading2 = activeTab === 'customers'
+    ? cms('howItWorksCustomers.heading2', 'From Booking to Report')
+    : cms('howItWorksExperts.heading2', 'with Jaladhaara.');
+
+  const activeSubtitle = activeTab === 'customers'
+    ? cms('howItWorksCustomers.subtitle', 'Whether you are looking for a reliable borewell survey for your land or a geoscientist seeking genuine survey bookings, our app-driven workflow makes it seamless.')
+    : cms('howItWorksExperts.subtitle', "Join India's largest groundwater professional network.");
 
   return (
     <div className="landing-page-root min-h-screen text-[var(--color-text-primary)] selection:bg-[var(--color-primary)] selection:text-white flex flex-col justify-between">
@@ -219,14 +256,14 @@ export default function HowItWorksPage() {
           <div className="text-center max-w-4xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[var(--color-primary)]/10 text-[var(--color-primary)] text-xs sm:text-sm font-bold uppercase tracking-wider mb-4 border border-[var(--color-primary)]/20">
               <Compass className="w-4 h-4" />
-              Simple, Transparent & Scientific
+              {activeEyebrow}
             </div>
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-[var(--color-text-primary)] leading-[1.2] mb-5">
-              How Jaladhaara Works<br className="hidden sm:inline" />
-              <span className="text-[var(--color-primary)]"> From Booking to Report</span>
+              {activeHeading1}<br className="hidden sm:inline" />
+              <span className="text-[var(--color-primary)]"> {activeHeading2}</span>
             </h1>
             <p className="text-sm sm:text-base lg:text-lg text-[var(--color-text-secondary)] leading-relaxed max-w-2xl mx-auto mb-8">
-              Whether you are looking for a reliable borewell survey for your land or a geoscientist seeking genuine survey bookings, our app-driven workflow makes it seamless.
+              {activeSubtitle}
             </p>
 
             {/* Audience Switcher Tabs */}

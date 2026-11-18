@@ -268,8 +268,8 @@ export default function LandingPage() {
                 </div>
 
                 <h1 className="text-[22px] sm:text-3xl md:text-4xl lg:text-[45px] xl:text-[52px] font-black leading-[1.2] lg:leading-[1.12] tracking-tight mb-2 sm:mb-3.5 text-[var(--color-text-primary)] font-display">
-                  <span className="block mb-1 lg:mb-2">{cms('hero.headline1', "India's Trusted Platform to")}</span>
-                  <span className="block text-[var(--color-primary)]">{cms('hero.headline2', "Book Verified Groundwater Survey Experts")}</span>
+                  <span className="block mb-1 lg:mb-2">{cms('hero.headline1', "Find Verified Groundwater")}</span>
+                  <span className="block text-[var(--color-primary)]">{cms('hero.headline2', "Experts Near You.")}</span>
                   {cms('hero.headline3', '') && (
                     <span className="block mt-1 lg:mt-2 text-[var(--color-text-primary)]">{cms('hero.headline3')}</span>
                   )}
@@ -307,10 +307,10 @@ export default function LandingPage() {
                     <ArrowRight className="w-3.5 h-3.5 sm:w-5 sm:h-5 group-hover:translate-x-1 transition-transform shrink-0" />
                   </a>
                   <a 
-                    href="#why-us" 
+                    href={cms('hero.cta2Label', 'Join as Expert') === 'How It Works' ? '/how-it-works' : '#apps'} 
                     className="flex-1 sm:flex-initial h-10.5 sm:h-13 px-3 sm:px-8 rounded-xl bg-white border border-[var(--color-border)] text-[var(--color-text-primary)] font-bold text-xs sm:text-base hover:bg-[var(--color-surface)] transition-all flex items-center justify-center gap-1.5 sm:gap-2 group shadow-xs text-center"
                   >
-                    <span>{cms('hero.cta2Label', 'How It Works')}</span>
+                    <span>{cms('hero.cta2Label', 'Join as Expert')}</span>
                     <div className="w-5 h-5 sm:w-7 sm:h-7 rounded-full border border-[var(--color-border)] flex items-center justify-center group-hover:border-[var(--color-text-primary)] transition-colors shrink-0">
                       <Play className="w-2.5 h-2.5 sm:w-3.5 sm:h-3.5 ml-0.5 fill-current" />
                     </div>
