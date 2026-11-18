@@ -1045,7 +1045,7 @@ function App() {
                                                         <AdminNavbar />
                                                     </Suspense>
                                                     <div className="lg:pl-[278px] min-h-screen flex flex-col">
-                                                        <main className="flex-1 p-6 md:p-8 pt-24 md:pt-28">
+                                                        <main className="flex-1 p-6 pt-24 md:pt-28">
                                                             <ErrorBoundary title="Unable to load page">
                                                             <Suspense fallback={<LoadingSpinner />}>
                                                                 <Routes>

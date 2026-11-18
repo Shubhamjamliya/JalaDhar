@@ -440,25 +440,260 @@ function FaqsEditor({ data, setData }) {
   );
 }
 
-function StatsEditor({ data, setData }) {
-  const update = (i, field, val) =>
-    setData(prev => prev.map((s, idx) => idx === i ? { ...s, [field]: val } : s));
+function StatsEditor({ data = {}, setData }) {
+  const items = Array.isArray(data.items) ? data.items : (Array.isArray(data) ? data : []);
+  const liveMetrics = data.liveMetrics || {
+    verified_experts: '3+',
+    completed_surveys: '12+',
+    states_covered: '20+'
+  };
+
+  const METRIC_OPTIONS = [
+    { value: 'verified_experts', label: '👤 Verified Experts (Live DB)', fallbackLabel: 'Verified Experts' },
+    { value: 'completed_surveys', label: '📋 Surveys Done (Live DB)', fallbackLabel: 'Surveys Done' },
+    { value: 'states_covered', label: '📍 States Covered (Live DB)', fallbackLabel: 'States Covered' }
+  ];
+
+  const updateItem = (i, field, val) => {
+    setData(prev => {
+      const currentItems = Array.isArray(prev.items) ? prev.items : (Array.isArray(prev) ? prev : []);
+      const newItems = currentItems.map((s, idx) => idx === i ? { ...s, [field]: val } : s);
+      return {
+        ...(typeof prev === 'object' && !Array.isArray(prev) ? prev : {}),
+        items: newItems
+      };
+    });
+  };
+
+  const toggleCardLive = (i, isLive) => {
+    setData(prev => {
+      const currentItems = Array.isArray(prev.items) ? prev.items : (Array.isArray(prev) ? prev : []);
+      const newItems = currentItems.map((s, idx) => {
+        if (idx !== i) return s;
+        const currentMetric = s.metric || (i === 0 ? 'verified_experts' : i === 1 ? 'completed_surveys' : 'states_covered');
+        const liveNum = liveMetrics[currentMetric] || '0';
+        return {
+          ...s,
+          isLive,
+          metric: currentMetric,
+          number: isLive ? liveNum : (s.number || '500+')
+        };
+      });
+      return {
+        ...(typeof prev === 'object' && !Array.isArray(prev) ? prev : {}),
+        items: newItems
+      };
+    });
+  };
+
+  const changeMetric = (i, metricKey) => {
+    setData(prev => {
+      const currentItems = Array.isArray(prev.items) ? prev.items : (Array.isArray(prev) ? prev : []);
+      const newItems = currentItems.map((s, idx) => {
+        if (idx !== i) return s;
+        const liveNum = liveMetrics[metricKey] || '0';
+        const opt = METRIC_OPTIONS.find(o => o.value === metricKey);
+        return {
+          ...s,
+          metric: metricKey,
+          number: s.isLive ? liveNum : s.number,
+          label: s.label || opt?.fallbackLabel || ''
+        };
+      });
+      return {
+        ...(typeof prev === 'object' && !Array.isArray(prev) ? prev : {}),
+        items: newItems
+      };
+    });
+  };
+
+  const addStat = () => {
+    setData(prev => {
+      const currentItems = Array.isArray(prev.items) ? prev.items : (Array.isArray(prev) ? prev : []);
+      return {
+        ...(typeof prev === 'object' && !Array.isArray(prev) ? prev : {}),
+        items: [
+          ...currentItems,
+          {
+            number: '',
+            label: '',
+            isLive: false,
+            metric: 'verified_experts'
+          }
+        ]
+      };
+    });
+  };
+
+  const removeStat = (i) => {
+    setData(prev => {
+      const currentItems = Array.isArray(prev.items) ? prev.items : (Array.isArray(prev) ? prev : []);
+      return {
+        ...(typeof prev === 'object' && !Array.isArray(prev) ? prev : {}),
+        items: currentItems.filter((_, idx) => idx !== i)
+      };
+    });
+  };
+
   return (
-    <div className="space-y-4">
-      <p className="text-xs text-slate-500 flex items-center gap-1.5"><IoInformationCircleOutline /> Edit the three platform statistics displayed on the landing page.</p>
-      {(data || []).map((stat, i) => (
-        <div key={i} className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2">
-          <span className="text-xs font-bold text-slate-500">Stat #{i + 1}</span>
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Number">
-              <TextInput value={stat.number} onChange={v => update(i, 'number', v)} placeholder="500+" maxLength={20} />
-            </Field>
-            <Field label="Label">
-              <TextInput value={stat.label} onChange={v => update(i, 'label', v)} placeholder="Verified Experts" maxLength={40} />
-            </Field>
-          </div>
+    <div className="space-y-6">
+      {/* Top Banner explaining per-card live toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-2xl">
+        <div>
+          <h4 className="text-sm font-bold text-slate-900">Platform Statistics Cards</h4>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Configure each stat independently: toggle between <strong>⚡ Live DB</strong> (auto-computed from MongoDB) and <strong>✏️ Manual</strong> for custom numbers.
+          </p>
         </div>
-      ))}
+        <button
+          type="button"
+          onClick={addStat}
+          disabled={items.length >= 6}
+          className={`flex items-center gap-1.5 text-xs font-bold px-3.5 py-2 rounded-xl transition-all shrink-0 cursor-pointer ${
+            items.length >= 6
+              ? 'text-slate-400 bg-slate-100 cursor-not-allowed'
+              : 'text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200'
+          }`}
+        >
+          <IoAddCircleOutline className="text-base" /> Add Stat Card
+        </button>
+      </div>
+
+      {/* Cards List */}
+      <div className="space-y-4">
+        {items.map((stat, i) => {
+          const isLive = Boolean(stat.isLive);
+          const currentMetric = stat.metric || (i === 0 ? 'verified_experts' : i === 1 ? 'completed_surveys' : 'states_covered');
+          const liveValue = liveMetrics[currentMetric] || '0';
+
+          return (
+            <div
+              key={i}
+              className={`border rounded-2xl p-5 space-y-4 transition-all ${
+                isLive
+                  ? 'bg-gradient-to-br from-emerald-50/40 via-white to-white border-emerald-300/80 shadow-xs ring-1 ring-emerald-500/10'
+                  : 'bg-white border-slate-200 shadow-2xs'
+              }`}
+            >
+              {/* Card Header with Per-Card Live/Manual Toggle */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                <div className="flex items-center gap-2.5">
+                  <span className="text-xs font-extrabold text-slate-800">Stat Card #{i + 1}</span>
+                  {isLive ? (
+                    <span className="flex items-center gap-1 text-[11px] font-bold text-emerald-700 bg-emerald-100/90 px-2.5 py-0.5 rounded-full border border-emerald-300/60">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Live Database Synced
+                    </span>
+                  ) : (
+                    <span className="text-[11px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                      Manual Custom
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2">
+                  {/* Segmented Per-Card Toggle */}
+                  <div className="inline-flex items-center gap-1 p-1 bg-slate-100 rounded-xl border border-slate-200/70">
+                    <button
+                      type="button"
+                      onClick={() => toggleCardLive(i, false)}
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        !isLive
+                          ? 'bg-slate-900 text-white shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                      }`}
+                    >
+                      ✏️ Manual
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleCardLive(i, true)}
+                      className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        isLive
+                          ? 'bg-emerald-600 text-white shadow-2xs'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                      }`}
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
+                      ⚡ Live DB
+                    </button>
+                  </div>
+
+                  {items.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeStat(i)}
+                      className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                      title="Remove card"
+                    >
+                      <IoTrashOutline className="text-base" />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Card Inputs */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {isLive ? (
+                  /* Live Mode: Metric Selector and Live Value Display */
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                      Live Metric Source
+                    </label>
+                    <select
+                      value={currentMetric}
+                      onChange={e => changeMetric(i, e.target.value)}
+                      className="w-full px-3 py-2 text-xs font-bold border border-emerald-300 rounded-xl bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                    >
+                      {METRIC_OPTIONS.map(opt => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex items-center gap-2 pt-1 text-xs">
+                      <span className="text-slate-500">Current live value:</span>
+                      <span className="font-extrabold text-emerald-700 font-display text-sm bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                        {liveValue}
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  /* Manual Mode: Editable Number */
+                  <Field label="Display Number" hint="e.g. 500+, 10,000+, 25+, 4.9★, 99%">
+                    <TextInput
+                      value={stat.number}
+                      onChange={v => updateItem(i, 'number', v)}
+                      placeholder="500+"
+                      maxLength={20}
+                    />
+                  </Field>
+                )}
+
+                {/* Editable Label in both modes */}
+                <Field label="Card Label" hint="Text shown under the number on the landing page">
+                  <TextInput
+                    value={stat.label}
+                    onChange={v => updateItem(i, 'label', v)}
+                    placeholder="Verified Experts"
+                    maxLength={40}
+                  />
+                </Field>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {items.length < 6 && (
+        <button
+          type="button"
+          onClick={addStat}
+          className="w-full flex items-center justify-center gap-2 py-3 border-2 border-dashed border-slate-200 rounded-xl text-xs font-bold text-slate-500 hover:border-blue-300 hover:text-blue-600 transition-all cursor-pointer"
+        >
+          <IoAddCircleOutline className="text-base" /> Add Another Stat Card ({items.length}/6)
+        </button>
+      )}
     </div>
   );
 }
@@ -914,7 +1149,18 @@ const DEFAULT_DATA = {
     expertPlayStoreUrl: '',
     expertAppStoreUrl: ''
   },
-  stats: [{ number: '', label: '' }, { number: '', label: '' }, { number: '', label: '' }],
+  stats: {
+    items: [
+      { number: '500+', label: 'Verified Experts', isLive: false, metric: 'verified_experts' },
+      { number: '10,000+', label: 'Surveys Done', isLive: false, metric: 'completed_surveys' },
+      { number: '25+', label: 'States Covered', isLive: false, metric: 'states_covered' }
+    ],
+    liveMetrics: {
+      verified_experts: '3+',
+      completed_surveys: '12+',
+      states_covered: '20+'
+    }
+  },
   faqs: {
     customer: DEFAULT_CUSTOMER_FAQS,
     expert: DEFAULT_EXPERT_FAQS
@@ -945,6 +1191,11 @@ export default function AdminLandingPage() {
       .then(res => {
         if (res?.success && res?.data) {
           const d = res.data;
+          const rawStats = d.stats;
+          const statsItems = Array.isArray(rawStats)
+            ? rawStats
+            : (rawStats?.items?.length ? rawStats.items : DEFAULT_DATA.stats.items);
+
           setSectionData({
             hero: d.hero || DEFAULT_DATA.hero,
             services: d.services?.length ? d.services : DEFAULT_DATA.services,
@@ -958,7 +1209,10 @@ export default function AdminLandingPage() {
               userAppVideo: { ...DEFAULT_DATA.appVideos.userAppVideo, ...(d.appVideos?.userAppVideo || {}) },
               expertAppVideo: { ...DEFAULT_DATA.appVideos.expertAppVideo, ...(d.appVideos?.expertAppVideo || {}) },
             },
-            stats: d.stats?.length ? d.stats : DEFAULT_DATA.stats,
+            stats: {
+              items: statsItems.length ? statsItems : DEFAULT_DATA.stats.items,
+              liveMetrics: d.liveMetrics || DEFAULT_DATA.stats.liveMetrics
+            },
             faqs: {
               customer: d.faqs?.customer?.length ? d.faqs.customer : DEFAULT_CUSTOMER_FAQS,
               expert: d.faqs?.expert?.length ? d.faqs.expert : DEFAULT_EXPERT_FAQS,
@@ -975,7 +1229,19 @@ export default function AdminLandingPage() {
     setSaving(true);
     setSaveStatus(null);
     try {
-      await updateLandingSection(currentKey, sectionData[currentKey]);
+      const payload = currentKey === 'stats'
+        ? (sectionData.stats.items || [])
+        : sectionData[currentKey];
+      const res = await updateLandingSection(currentKey, payload);
+      if (res?.liveMetrics && currentKey === 'stats') {
+        setSectionData(prev => ({
+          ...prev,
+          stats: {
+            ...prev.stats,
+            liveMetrics: res.liveMetrics
+          }
+        }));
+      }
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000);
     } catch {

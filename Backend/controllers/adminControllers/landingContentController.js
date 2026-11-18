@@ -1,5 +1,8 @@
 const multer = require('multer');
 const LandingContent = require('../../models/LandingContent');
+const Vendor = require('../../models/Vendor');
+const Booking = require('../../models/Booking');
+const { BOOKING_STATUS } = require('../../utils/constants');
 const { uploadToCloudinary, deleteFromCloudinary } = require('../../services/cloudinaryService');
 const { logAdminActivity } = require('../../services/auditLogger');
 
@@ -46,6 +49,63 @@ const seedDefaultLandingContent = async () => {
   }
 };
 
+// ─── Compute Live Database Stats ───────────────────────────────────────────
+const computeDynamicStats = async () => {
+  try {
+    const [approvedExperts, totalSurveys, vendorStates, bookingStates] = await Promise.all([
+      Vendor.countDocuments({ isApproved: true }),
+      Booking.countDocuments({
+        status: {
+          $in: [
+            BOOKING_STATUS.COMPLETED,
+            BOOKING_STATUS.FINAL_SETTLEMENT_COMPLETE,
+            BOOKING_STATUS.PAYMENT_SUCCESS,
+            BOOKING_STATUS.REPORT_UPLOADED,
+            BOOKING_STATUS.VISITED
+          ]
+        }
+      }),
+      Vendor.distinct('state', { state: { $exists: true, $ne: null, $ne: '' } }),
+      Booking.distinct('address.state', { 'address.state': { $exists: true, $ne: null, $ne: '' } })
+    ]);
+
+    const statesSet = new Set(
+      [...vendorStates, ...bookingStates]
+        .map(s => (typeof s === 'string' ? s.trim() : ''))
+        .filter(Boolean)
+    );
+    const statesCount = statesSet.size || (approvedExperts > 0 ? 1 : 0);
+
+    const liveMetrics = {
+      verified_experts: approvedExperts > 0 ? `${approvedExperts.toLocaleString()}+` : '0',
+      completed_surveys: totalSurveys > 0 ? `${totalSurveys.toLocaleString()}+` : '0',
+      states_covered: statesCount > 0 ? `${statesCount.toLocaleString()}+` : '0'
+    };
+
+    const liveStats = [
+      { number: liveMetrics.verified_experts, label: 'Verified Experts', metric: 'verified_experts' },
+      { number: liveMetrics.completed_surveys, label: 'Surveys Done', metric: 'completed_surveys' },
+      { number: liveMetrics.states_covered, label: 'States Covered', metric: 'states_covered' }
+    ];
+
+    return { liveStats, liveMetrics };
+  } catch (err) {
+    console.error('[computeDynamicStats] Error:', err);
+    return {
+      liveStats: [
+        { number: '0', label: 'Verified Experts', metric: 'verified_experts' },
+        { number: '0', label: 'Surveys Done', metric: 'completed_surveys' },
+        { number: '0', label: 'States Covered', metric: 'states_covered' }
+      ],
+      liveMetrics: {
+        verified_experts: '0',
+        completed_surveys: '0',
+        states_covered: '0'
+      }
+    };
+  }
+};
+
 // ─── GET /api/landing (public) ───────────────────────────────────────────────
 const getLandingContent = async (req, res) => {
   try {
@@ -55,10 +115,27 @@ const getLandingContent = async (req, res) => {
       await content.save();
     }
 
+    const { liveStats, liveMetrics } = await computeDynamicStats();
+    const data = content.toObject();
+    data.liveStats = liveStats;
+    data.liveMetrics = liveMetrics;
+
+    // Resolve individual stat card number dynamically if isLive is true
+    const resolvedStats = (content.stats || []).map(stat => {
+      const st = stat.toObject ? stat.toObject() : { ...stat };
+      if (st.isLive) {
+        const key = st.metric || 'verified_experts';
+        st.number = liveMetrics[key] || st.number;
+      }
+      return st;
+    });
+
+    data.stats = resolvedStats;
+
     res.set('Cache-Control', 'no-cache, no-store, must-revalidate'); // Ensure instant updates upon admin save
     res.json({
       success: true,
-      data: content
+      data
     });
   } catch (error) {
     console.error('[getLandingContent] Error:', error);
@@ -79,7 +156,7 @@ const updateLandingSection = async (req, res) => {
 
     const allowedSections = [
       'hero', 'services', 'howItWorksCustomers', 'howItWorksExperts',
-      'founder', 'stats', 'faqs', 'ecosystemApps', 'ctaBanner', 'footer',
+      'founder', 'stats', 'statsMode', 'faqs', 'ecosystemApps', 'ctaBanner', 'footer',
       'whyChoose', 'appVideos'
     ];
 
@@ -95,7 +172,47 @@ const updateLandingSection = async (req, res) => {
       content = new LandingContent({ page: 'landing' });
     }
 
-    // Deep-set the section field
+    // Special handling for stats to support per-card live toggle configuration
+    if (section === 'stats') {
+      const statsArray = Array.isArray(updateData) ? updateData : (updateData?.items || []);
+      content.stats = statsArray;
+      content.updatedBy = adminId;
+      content.markModified('stats');
+      await content.save();
+
+      const { liveStats, liveMetrics } = await computeDynamicStats();
+
+      const resolvedStats = (content.stats || []).map(stat => {
+        const st = stat.toObject ? stat.toObject() : { ...stat };
+        if (st.isLive) {
+          const key = st.metric || 'verified_experts';
+          st.number = liveMetrics[key] || st.number;
+        }
+        return st;
+      });
+
+      // Audit log (non-blocking)
+      logAdminActivity({
+        req,
+        adminId,
+        action: 'LANDING_CONTENT_UPDATED',
+        module: 'SETTINGS',
+        targetEntity: 'LandingContent',
+        targetId: content._id.toString(),
+        targetLabel: 'Landing page section updated: stats',
+        notes: 'Platform stats updated with per-card live/manual configuration'
+      }).catch(err => console.error('[LandingContent] Audit log error:', err));
+
+      return res.json({
+        success: true,
+        message: 'Platform stats updated successfully',
+        data: resolvedStats,
+        liveStats,
+        liveMetrics
+      });
+    }
+
+    // Deep-set the section field for other sections
     content.set(section, updateData);
     content.updatedBy = adminId;
     content.markModified(section);

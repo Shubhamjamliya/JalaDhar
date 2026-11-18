@@ -57,7 +57,9 @@ const FounderSchema = new mongoose.Schema({
 
 const StatSchema = new mongoose.Schema({
   number: { type: String, default: '' },
-  label: { type: String, default: '' }
+  label: { type: String, default: '' },
+  isLive: { type: Boolean, default: false },
+  metric: { type: String, default: 'verified_experts' }
 }, { _id: false });
 
 const FaqSchema = new mongoose.Schema({
@@ -327,6 +329,11 @@ const LandingContentSchema = new mongoose.Schema({
       { number: '10,000+', label: 'Surveys Done' },
       { number: '25+', label: 'States Covered' }
     ]
+  },
+  statsMode: {
+    type: String,
+    enum: ['manual', 'dynamic'],
+    default: 'manual'
   },
   faqs: { type: FaqsSchema, default: () => ({}) },
   ecosystemApps: {

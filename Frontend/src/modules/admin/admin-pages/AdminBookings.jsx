@@ -160,8 +160,8 @@ export default function AdminBookings() {
     };
 
     const formatCurrency = (amount) => {
-        if (!amount) return "₹0";
-        return `₹${amount.toLocaleString("en-IN")}`;
+        if (!amount && amount !== 0) return "₹0";
+        return `₹${Number(amount).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
     };
 
     const getStatusColor = (status) => {
@@ -203,19 +203,31 @@ export default function AdminBookings() {
     }
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex items-center justify-between">
+        <div className="space-y-4">
+            {/* Header with Integrated Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
-                    <h1 className="text-2xl font-bold text-gray-900">All Bookings</h1>
-                    <p className="text-sm text-gray-600 mt-1">
-                        Manage and view all booking requests
+                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">All Bookings</h1>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                        Manage and track all customer booking requests ({pagination.totalBookings || 0} total)
                     </p>
+                </div>
+                <div className="w-full sm:w-72 md:w-80 relative">
+                    <IoSearchOutline className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-base" />
+                    <input
+                        type="text"
+                        placeholder="Search user, expert, or service..."
+                        value={filters.search}
+                        onChange={(e) => {
+                            setFilters({ ...filters, search: e.target.value, page: 1 });
+                        }}
+                        className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium text-gray-800 placeholder-gray-400 shadow-2xs focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                    />
                 </div>
             </div>
 
             {/* Workflow Lifecycle Quick Tabs */}
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
                 {[
                     { id: 'all', label: 'All Bookings', status: '' },
                     { id: 'pending', label: 'New / Pending', status: 'PENDING' },
@@ -233,10 +245,10 @@ export default function AdminBookings() {
                         <button
                             key={tab.id}
                             onClick={() => setFilters({ ...filters, status: tab.status, page: 1 })}
-                            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap ${
+                            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                                 isSelected
-                                    ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
-                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-100'
+                                    ? 'bg-blue-600 text-white shadow-xs'
+                                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200/70 hover:border-gray-300'
                             }`}
                         >
                             {tab.label}
@@ -245,150 +257,147 @@ export default function AdminBookings() {
                 })}
             </div>
 
-            {/* Search Bar & Dropdown */}
-            <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100">
-                <div className="flex flex-col md:flex-row gap-4">
-                    <div className="flex-1">
-                        <div className="relative">
-                            <IoSearchOutline className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-gray-400 text-lg" />
-                            <input
-                                type="text"
-                                placeholder="Search by user, vendor, or service type..."
-                                value={filters.search}
-                                onChange={(e) => {
-                                    setFilters({ ...filters, search: e.target.value, page: 1 });
-                                }}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500/20 focus:border-blue-400 outline-none transition-all"
-                            />
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             {/* Bookings List */}
             {bookings.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-sm p-12 text-center">
-                    <IoCalendarOutline className="mx-auto text-6xl text-gray-300 mb-4" />
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No Bookings Found</h3>
-                    <p className="text-gray-600">
+                <div className="bg-white rounded-xl shadow-xs border border-gray-100 p-12 text-center">
+                    <IoCalendarOutline className="mx-auto text-5xl text-gray-300 mb-3" />
+                    <h3 className="text-base font-semibold text-gray-900 mb-1">No Bookings Found</h3>
+                    <p className="text-xs text-gray-500">
                         {filters.search || filters.status
                             ? "Try adjusting your filters"
                             : "No bookings have been created yet"}
                     </p>
                 </div>
             ) : (
-                <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div className="bg-white rounded-xl shadow-xs border border-gray-200/70 overflow-hidden">
                     <div className="overflow-x-auto">
-                        <table className="w-full">
-                            <thead className="bg-gray-50 border-b border-gray-200">
+                        <table className="w-full text-left border-collapse min-w-[960px]">
+                            <thead className="bg-gray-50/80 border-b border-gray-200 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">
                                 <tr>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="pl-5 pr-3 py-3 w-[115px] whitespace-nowrap">
                                         Booking ID
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 w-[150px] whitespace-nowrap">
                                         User
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 w-[160px] whitespace-nowrap">
                                         Expert
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 w-[160px] whitespace-nowrap">
                                         Service
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Date
+                                    <th className="px-3 py-3 w-[115px] whitespace-nowrap">
+                                        Date & Time
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 w-[100px] whitespace-nowrap">
                                         Status
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Assigned Operations
+                                    <th className="px-3 py-3 w-[125px] whitespace-nowrap">
+                                        Assigned Ops
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="px-3 py-3 w-[85px] whitespace-nowrap text-right">
                                         Amount
                                     </th>
-                                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    <th className="pl-3 pr-5 py-3 w-[80px] whitespace-nowrap text-right">
                                         Actions
                                     </th>
                                 </tr>
                             </thead>
-                            <tbody className="bg-white divide-y divide-gray-200">
+                            <tbody className="bg-white divide-y divide-gray-100 text-xs">
                                 {bookings.map((booking) => (
                                     <tr
                                         key={booking._id}
-                                        className="hover:bg-gray-50 transition-colors"
+                                        className="hover:bg-blue-50/30 transition-colors"
                                     >
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <span className="text-sm font-medium text-gray-900">
+                                        {/* Booking ID */}
+                                        <td className="pl-5 pr-3 py-3 whitespace-nowrap">
+                                            <span className="font-mono text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/60">
                                                 #{booking._id.toString().slice(-8).toUpperCase()}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
+
+                                        {/* User */}
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            <div className="font-semibold text-gray-900 leading-tight">
                                                 {booking.user?.name || "N/A"}
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {booking.user?.email || ""}
+                                            <div className="text-[11px] text-gray-400 font-normal truncate max-w-[140px]" title={booking.user?.email}>
+                                                {booking.user?.email || "—"}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
+
+                                        {/* Expert */}
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            <div className="font-semibold text-gray-900 leading-tight">
                                                 {booking.vendor?.name || "N/A"}
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {booking.vendor?.email || ""}
+                                            <div className="text-[11px] text-gray-400 font-normal truncate max-w-[150px]" title={booking.vendor?.email}>
+                                                {booking.vendor?.email || "—"}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4">
-                                            <div className="text-sm text-gray-900">
+
+                                        {/* Service */}
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            <div className="font-medium text-gray-900 truncate max-w-[160px]" title={booking.service?.name}>
                                                 {booking.service?.name || "N/A"}
                                             </div>
-                                            <div className="text-sm text-gray-500">
+                                            <div className="text-[11px] text-gray-500 font-medium">
                                                 {formatCurrency(booking.service?.price || booking.payment?.subtotal || 0)}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm text-gray-900">
+
+                                        {/* Date */}
+                                        <td className="px-3 py-3 whitespace-nowrap">
+                                            <div className="font-medium text-gray-800">
                                                 {formatDate(booking.scheduledDate)}
                                             </div>
-                                            <div className="text-sm text-gray-500">
-                                                {booking.scheduledTime || ""}
+                                            <div className="text-[11px] text-gray-400 font-normal">
+                                                {booking.scheduledTime || "TBD"}
                                             </div>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
+
+                                        {/* Status */}
+                                        <td className="px-3 py-3 whitespace-nowrap">
                                             <span
-                                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(
+                                                className={`inline-flex px-2 py-0.5 text-[11px] font-bold rounded-full ${getStatusColor(
                                                     booking.status
                                                 )}`}
                                             >
                                                 {booking.status || "N/A"}
                                             </span>
                                         </td>
+
                                         {/* Assigned Operations Admin Chip */}
-                                        <td className="px-6 py-4 whitespace-nowrap">
+                                        <td className="px-3 py-3 whitespace-nowrap">
                                             <button
                                                 type="button"
                                                 onClick={() => {
                                                     setSelectedBooking(booking);
                                                     setShowAssignmentModal(true);
                                                 }}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors cursor-pointer"
+                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 hover:bg-indigo-100 transition-colors cursor-pointer"
+                                                title={booking.assignedTo?.name ? `Assigned to ${booking.assignedTo.name}` : "Auto-Assigned"}
                                             >
-                                                <IoPersonOutline className="text-xs" />
-                                                {booking.assignedTo?.name || "Auto-Assigned"}
-                                                {isSuperAdmin && <IoSwapHorizontalOutline className="text-xs ml-1 text-indigo-500" />}
+                                                <IoPersonOutline className="text-xs shrink-0" />
+                                                <span className="truncate max-w-[90px]">{booking.assignedTo?.name || "Auto-Assigned"}</span>
+                                                {isSuperAdmin && <IoSwapHorizontalOutline className="text-xs ml-0.5 text-indigo-500 shrink-0" />}
                                             </button>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap">
-                                            <div className="text-sm font-medium text-gray-900">
+
+                                        {/* Amount */}
+                                        <td className="px-3 py-3 whitespace-nowrap text-right">
+                                            <span className="font-bold text-gray-900 text-xs">
                                                 {formatCurrency(booking.payment?.totalAmount || 0)}
-                                            </div>
+                                            </span>
                                         </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+
+                                        {/* Actions */}
+                                        <td className="pl-3 pr-5 py-3 whitespace-nowrap text-right">
                                             <button
                                                 onClick={() => navigate(`/admin/bookings/${booking._id}`)}
-                                                className="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 border border-blue-100 transition-colors cursor-pointer"
                                             >
-                                                <IoEyeOutline className="text-lg" />
+                                                <IoEyeOutline className="text-sm" />
                                                 View
                                             </button>
                                         </td>
@@ -400,8 +409,8 @@ export default function AdminBookings() {
 
                     {/* Pagination */}
                     {pagination.totalPages > 1 && (
-                        <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-                            <div className="text-sm text-gray-700">
+                        <div className="bg-gray-50/80 px-5 py-3 border-t border-gray-200 flex items-center justify-between text-xs text-gray-600">
+                            <div>
                                 Showing {((pagination.currentPage - 1) * filters.limit) + 1} to{" "}
                                 {Math.min(pagination.currentPage * filters.limit, pagination.totalBookings)} of{" "}
                                 {pagination.totalBookings} bookings
@@ -410,14 +419,14 @@ export default function AdminBookings() {
                                 <button
                                     onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
                                     disabled={filters.page === 1}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                 >
                                     Previous
                                 </button>
                                 <button
                                     onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
                                     disabled={filters.page >= pagination.totalPages}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                    className="px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer transition-colors"
                                 >
                                     Next
                                 </button>
