@@ -986,6 +986,13 @@ export default function AdminSettings({ defaultTab = "general" }) {
                         ...prev,
                         ...cfgRes.data
                     }));
+                    if (typeof window !== "undefined" && window.BroadcastChannel) {
+                        try {
+                            const bc = new BroadcastChannel("jaladhaara_language_sync");
+                            bc.postMessage({ type: "LANGUAGE_CONFIG_UPDATED", data: cfgRes.data });
+                            bc.close();
+                        } catch (_) {}
+                    }
                 }
             } catch (err) {
                 console.error('Error loading language settings:', err);

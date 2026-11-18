@@ -142,6 +142,10 @@ const initializeLanguageSystem = async () => {
  */
 const getPublicConfig = async (req, res) => {
   try {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     let config = await LanguageConfig.findOne({ configKey: 'PRIMARY_LANGUAGE_CONFIG' });
     if (!config) {
       await initializeLanguageSystem();
@@ -395,6 +399,7 @@ const updateLanguageConfig = async (req, res) => {
     if (googleApiKey !== undefined) config.googleApiKey = googleApiKey;
     if (translationProvider !== undefined) config.translationProvider = translationProvider;
     if (autoTranslateMissing !== undefined) config.autoTranslateMissing = autoTranslateMissing;
+    config.markModified('supportedLanguages');
     config.updatedBy = req.userId || req.user?._id;
 
     await config.save();
@@ -641,6 +646,7 @@ const addSupportedLanguage = async (req, res) => {
       config.supportedLanguages.push(langItem);
     }
 
+    config.markModified('supportedLanguages');
     config.updatedBy = adminId;
     await config.save();
     broadcastLanguageConfigUpdate(config);
@@ -711,6 +717,7 @@ const deleteSupportedLanguage = async (req, res) => {
       return res.status(404).json({ success: false, message: `Language '${code}' not found in configuration` });
     }
 
+    config.markModified('supportedLanguages');
     config.updatedBy = adminId;
     await config.save();
     broadcastLanguageConfigUpdate(config);

@@ -760,8 +760,7 @@ function AppVideosEditor({ data = {}, setData }) {
 const SECTIONS = [
   { id: 'hero', label: 'Hero Section', icon: '🏠' },
   { id: 'services', label: 'Category Cards', icon: '🗂️' },
-  { id: 'howItWorksCustomers', label: 'How It Works (Customers)', icon: '👤' },
-  { id: 'howItWorksExperts', label: 'How It Works (Experts)', icon: '🔧' },
+  { id: 'howItWorks', label: 'How It Works', icon: '🔄' },
   { id: 'founder', label: 'Founder Profile', icon: '👨‍💼' },
   { id: 'whyChoose', label: 'Why Choose & Who For', icon: '⭐' },
   { id: 'appVideos', label: 'App Downloads & Videos', icon: '📱' },
@@ -925,11 +924,20 @@ const DEFAULT_DATA = {
 
 export default function AdminLandingPage() {
   const [activeSection, setActiveSection] = useState('hero');
+  const [howItWorksTab, setHowItWorksTab] = useState('customers'); // 'customers' | 'experts'
   const [sectionData, setSectionData] = useState({ ...DEFAULT_DATA });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveStatus, setSaveStatus] = useState(null); // 'success' | 'error'
   const [error, setError] = useState(null);
+
+  const currentKey = activeSection === 'howItWorks'
+    ? (howItWorksTab === 'customers' ? 'howItWorksCustomers' : 'howItWorksExperts')
+    : activeSection;
+
+  const currentLabel = activeSection === 'howItWorks'
+    ? `How It Works (${howItWorksTab === 'customers' ? 'Customers' : 'Experts'})`
+    : (SECTIONS.find(s => s.id === activeSection)?.label || '');
 
   // Load current content
   useEffect(() => {
@@ -967,7 +975,7 @@ export default function AdminLandingPage() {
     setSaving(true);
     setSaveStatus(null);
     try {
-      await updateLandingSection(activeSection, sectionData[activeSection]);
+      await updateLandingSection(currentKey, sectionData[currentKey]);
       setSaveStatus('success');
       setTimeout(() => setSaveStatus(null), 3000);
     } catch {
@@ -986,13 +994,12 @@ export default function AdminLandingPage() {
   };
 
   const renderEditor = () => {
-    const d = sectionData[activeSection];
-    const set = setSection(activeSection);
+    const d = sectionData[currentKey];
+    const set = setSection(currentKey);
     switch (activeSection) {
       case 'hero':          return <HeroEditor data={d} setData={set} />;
       case 'services':      return <ServicesEditor data={d} setData={set} />;
-      case 'howItWorksCustomers': return <HowItWorksEditor data={d} setData={set} label="Customer" />;
-      case 'howItWorksExperts':   return <HowItWorksEditor data={d} setData={set} label="Expert" />;
+      case 'howItWorks':    return <HowItWorksEditor data={d} setData={set} label={howItWorksTab === 'customers' ? 'Customer' : 'Expert'} />;
       case 'founder':       return <FounderEditor data={d} setData={set} />;
       case 'whyChoose':     return <WhyChooseEditor data={d} setData={set} />;
       case 'appVideos':     return <AppVideosEditor data={d} setData={set} />;
@@ -1022,8 +1029,6 @@ export default function AdminLandingPage() {
     );
   }
 
-  const activeLabel = SECTIONS.find(s => s.id === activeSection)?.label || '';
-
   return (
     <div className="min-h-screen">
       {/* Header */}
@@ -1051,7 +1056,7 @@ export default function AdminLandingPage() {
               ? <IoCheckmarkCircle className="text-lg" />
               : <IoSaveOutline className="text-lg" />
             }
-            {saving ? 'Saving...' : saveStatus === 'success' ? 'Saved!' : `Save ${activeLabel}`}
+            {saving ? 'Saving...' : saveStatus === 'success' ? 'Saved!' : `Save ${currentLabel}`}
           </button>
         </div>
       </div>
@@ -1078,7 +1083,7 @@ export default function AdminLandingPage() {
       </AnimatePresence>
 
       {/* Horizontal Sections Segmented Tab Bar */}
-      <div className="mb-6 overflow-x-auto pb-1 scrollbar-none">
+      <div className="mb-5 overflow-x-auto pb-1 scrollbar-none">
         <div className="inline-flex items-center gap-1.5 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200/80 shadow-2xs">
           {SECTIONS.map(s => {
             const isActive = activeSection === s.id;
@@ -1100,18 +1105,60 @@ export default function AdminLandingPage() {
         </div>
       </div>
 
+      {/* Sub-toggle for How It Works (matching Help-U) */}
+      {activeSection === 'howItWorks' && (
+        <div className="flex flex-wrap items-center gap-2.5 mb-6 text-xs sm:text-sm">
+          <span className="text-slate-500 font-medium">Editing section for:</span>
+          <div className="inline-flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200/80">
+            <button
+              type="button"
+              onClick={() => { setHowItWorksTab('customers'); setSaveStatus(null); }}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                howItWorksTab === 'customers'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+              }`}
+            >
+              <span>👤 Customer App</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => { setHowItWorksTab('experts'); setSaveStatus(null); }}
+              className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                howItWorksTab === 'experts'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-white/80'
+              }`}
+            >
+              <span>🔧 Professional / Expert</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Editor Panel (Full Width) */}
       <main className="w-full">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8">
           <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-            <span className="text-2xl">{SECTIONS.find(s => s.id === activeSection)?.icon}</span>
+            <span className="text-2xl">
+              {activeSection === 'howItWorks'
+                ? (howItWorksTab === 'customers' ? '👤' : '🔧')
+                : SECTIONS.find(s => s.id === activeSection)?.icon
+              }
+            </span>
             <div>
-              <h2 className="text-lg font-bold text-slate-900">{activeLabel}</h2>
-              <p className="text-xs text-slate-500">Make changes below, then click "Save {activeLabel}"</p>
+              <h2 className="text-lg font-bold text-slate-900">{currentLabel}</h2>
+              <p className="text-xs text-slate-500">Make changes below, then click "Save {currentLabel}"</p>
             </div>
           </div>
           <AnimatePresence mode="wait">
-            <motion.div key={activeSection} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} transition={{ duration: 0.18 }}>
+            <motion.div
+              key={activeSection === 'howItWorks' ? `${activeSection}-${howItWorksTab}` : activeSection}
+              initial={{ opacity: 0, x: 10 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -10 }}
+              transition={{ duration: 0.18 }}
+            >
               {renderEditor()}
             </motion.div>
           </AnimatePresence>
@@ -1124,7 +1171,7 @@ export default function AdminLandingPage() {
               } text-white`}
             >
               {saving ? <IoRefreshOutline className="animate-spin" /> : <IoSaveOutline />}
-              {saving ? 'Saving...' : `Save ${activeLabel}`}
+              {saving ? 'Saving...' : `Save ${currentLabel}`}
             </button>
           </div>
         </div>

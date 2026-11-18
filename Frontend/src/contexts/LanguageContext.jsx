@@ -10,11 +10,7 @@ export const DEFAULT_SUPPORTED_LANGUAGES = [
     { code: "ta", name: "Tamil", nativeName: "தமிழ்", badge: "த", isEnabled: true, isDefault: false },
     { code: "kn", name: "Kannada", nativeName: "ಕನ್ನಡ", badge: "ಕ", isEnabled: true, isDefault: false },
     { code: "mr", name: "Marathi", nativeName: "मराठी", badge: "म", isEnabled: true, isDefault: false },
-    { code: "or", name: "Odia", nativeName: "ଓଡ଼ିଆ", badge: "ଓ", isEnabled: true, isDefault: false },
-    { code: "bn", name: "Bengali", nativeName: "বাংলা", badge: "বা", isEnabled: false, isDefault: false },
-    { code: "gu", name: "Gujarati", nativeName: "ગુજરાતી", badge: "ગુ", isEnabled: false, isDefault: false },
-    { code: "pa", name: "Punjabi", nativeName: "ਪੰਜਾਬੀ", badge: "ਪੰ", isEnabled: false, isDefault: false },
-    { code: "ml", name: "Malayalam", nativeName: "മലയാളം", badge: "മ", isEnabled: false, isDefault: false }
+    { code: "or", name: "Odia", nativeName: "ଓଡ଼ିଆ", badge: "ଓ", isEnabled: true, isDefault: false }
 ];
 
 export const SUPPORTED_LANGUAGES = DEFAULT_SUPPORTED_LANGUAGES;
@@ -120,7 +116,10 @@ export function LanguageProvider({ children }) {
     // Fetch dynamic language configuration from backend
     const fetchConfig = useCallback(async () => {
         try {
-            const res = await api.get("/languages/config");
+            const res = await api.get("/languages/config", {
+                params: { _t: Date.now() },
+                headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate', 'Pragma': 'no-cache' }
+            });
             if (res.data?.success) {
                 const data = res.data.data;
                 if (data.isLanguageEnabled !== undefined) {
@@ -128,6 +127,15 @@ export function LanguageProvider({ children }) {
                 }
                 if (Array.isArray(data.supportedLanguages)) {
                     setSupportedLanguages(data.supportedLanguages);
+
+                    // Cross-tab broadcast so all open tabs immediately receive updated language list
+                    if (typeof window !== "undefined" && window.BroadcastChannel) {
+                        try {
+                            const bc = new BroadcastChannel("jaladhaara_language_sync");
+                            bc.postMessage({ type: "LANGUAGE_CONFIG_UPDATED", data });
+                            bc.close();
+                        } catch (_) {}
+                    }
 
                     // If user's currently selected language was deleted by Admin, fallback to default
                     const currentLang = localStorage.getItem("jaladhaara_language") || "en";
@@ -171,7 +179,20 @@ export function LanguageProvider({ children }) {
         };
         window.addEventListener("jaladhaara_language_config_updated", handleLiveUpdate);
 
-        // 2. Cross-Tab Instant Sync (Storage Event)
+        // 2. Cross-Tab Instant Sync via BroadcastChannel
+        let syncChannel = null;
+        if (typeof window !== "undefined" && window.BroadcastChannel) {
+            try {
+                syncChannel = new BroadcastChannel("jaladhaara_language_sync");
+                syncChannel.onmessage = (event) => {
+                    if (event.data?.type === "LANGUAGE_CONFIG_UPDATED" && event.data.data) {
+                        handleLiveUpdate({ detail: event.data.data });
+                    }
+                };
+            } catch (_) {}
+        }
+
+        // 3. Cross-Tab Instant Sync (Storage Event)
         const handleStorageChange = (e) => {
             if (e.key === "jaladhaara_language" && e.newValue) {
                 setLanguageState(e.newValue);
@@ -179,7 +200,7 @@ export function LanguageProvider({ children }) {
         };
         window.addEventListener("storage", handleStorageChange);
 
-        // 3. Tab Visibility & Focus Sync
+        // 4. Tab Visibility & Focus Sync
         const handleVisibilityChange = () => {
             if (document.visibilityState === "visible") {
                 fetchConfig();
@@ -188,11 +209,14 @@ export function LanguageProvider({ children }) {
         window.addEventListener("focus", fetchConfig);
         document.addEventListener("visibilitychange", handleVisibilityChange);
 
-        // 4. Background Heartbeat Sync every 15 seconds
+        // 5. Background Heartbeat Sync every 15 seconds
         const intervalId = setInterval(fetchConfig, 15000);
 
         return () => {
             window.removeEventListener("jaladhaara_language_config_updated", handleLiveUpdate);
+            if (syncChannel) {
+                try { syncChannel.close(); } catch (_) {}
+            }
             window.removeEventListener("storage", handleStorageChange);
             window.removeEventListener("focus", fetchConfig);
             document.removeEventListener("visibilitychange", handleVisibilityChange);

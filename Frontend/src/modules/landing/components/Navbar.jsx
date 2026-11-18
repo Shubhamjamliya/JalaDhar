@@ -42,7 +42,7 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const { language, setLanguage, supportedLanguages, isLanguageEnabled } = useLanguage();
+  const { language, setLanguage, supportedLanguages, isLanguageEnabled, refreshLanguages } = useLanguage();
 
   const availableLanguages = useMemo(() => {
     const list = Array.isArray(supportedLanguages) && supportedLanguages.length > 0 
@@ -216,7 +216,14 @@ export default function Navbar() {
             <div className="relative" ref={langDropdownRef}>
               <button
                 type="button"
-                onClick={() => setShowLangMenu((prev) => !prev)}
+                onClick={() => {
+                  setShowLangMenu((prev) => {
+                    if (!prev && typeof refreshLanguages === 'function') {
+                      refreshLanguages();
+                    }
+                    return !prev;
+                  });
+                }}
                 className="flex items-center gap-1.5 px-3 py-2 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200/90 text-xs font-bold text-slate-700 hover:border-blue-300 transition-all cursor-pointer shadow-2xs active:scale-95"
                 title="Change Regional Language"
                 aria-label="Change Language"
@@ -228,12 +235,12 @@ export default function Navbar() {
               </button>
 
               {showLangMenu && (
-                <div className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute right-0 mt-2 w-60 sm:w-64 bg-white rounded-2xl shadow-xl border border-slate-100 p-2 z-50 space-y-1 animate-in fade-in zoom-in-95 duration-150">
                   <div className="px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-100 mb-1 flex items-center justify-between">
-                    <span>Select Language</span>
+                    <span>Select Language ({availableLanguages.length})</span>
                     <span className="text-[10px] font-medium text-slate-400">भाषा चुनें</span>
                   </div>
-                  <div className="max-h-64 overflow-y-auto space-y-1">
+                  <div className="max-h-80 overflow-y-auto space-y-1 pr-1 [scrollbar-width:thin] [scrollbar-color:#CBD5E1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full hover:[&::-webkit-scrollbar-thumb]:bg-slate-400">
                     {availableLanguages.map((lang) => {
                       const isSelected = language === lang.code;
                       return (
@@ -248,11 +255,16 @@ export default function Navbar() {
                             isSelected ? 'bg-blue-50 text-[#0A84FF]' : 'text-slate-700 hover:bg-slate-50'
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            <span>{lang.nativeName}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                              isSelected ? 'bg-[#0A84FF] text-white' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {lang.badge || lang.code.toUpperCase()}
+                            </span>
+                            <span className="truncate">{lang.nativeName}</span>
                             {isSelected && <Check className="w-3.5 h-3.5 text-[#0A84FF] shrink-0" />}
                           </div>
-                          <span className="text-[10px] text-slate-400 font-mono font-normal">{lang.name}</span>
+                          <span className="text-[10px] text-slate-400 font-mono font-normal shrink-0">{lang.name}</span>
                         </button>
                       );
                     })}
@@ -276,7 +288,10 @@ export default function Navbar() {
           {isLanguageEnabled && (
             <button
               type="button"
-              onClick={() => setShowLangModal(true)}
+              onClick={() => {
+                if (typeof refreshLanguages === 'function') refreshLanguages();
+                setShowLangModal(true);
+              }}
               className="h-8.5 sm:h-9 px-2 sm:px-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 active:scale-95 border border-slate-200/90 text-slate-700 text-xs font-bold shadow-2xs transition-all cursor-pointer flex items-center gap-1 shrink-0"
               title="Change Language"
               aria-label="Change Language"
@@ -382,7 +397,14 @@ export default function Navbar() {
                   <div className="relative">
                     <button
                       type="button"
-                      onClick={() => setDrawerLangExpanded((prev) => !prev)}
+                      onClick={() => {
+                        setDrawerLangExpanded((prev) => {
+                          if (!prev && typeof refreshLanguages === 'function') {
+                            refreshLanguages();
+                          }
+                          return !prev;
+                        });
+                      }}
                       className="w-full flex items-center justify-between p-3 rounded-2xl bg-slate-50 hover:bg-slate-100/80 active:scale-[0.99] border border-slate-200/80 transition-all cursor-pointer shadow-2xs group"
                       aria-expanded={drawerLangExpanded}
                     >
@@ -407,7 +429,7 @@ export default function Navbar() {
 
                     {/* Expandable Dropdown Options */}
                     {drawerLangExpanded && (
-                      <div className="mt-2 bg-white rounded-2xl border border-slate-200/80 shadow-lg p-1.5 space-y-1 max-h-56 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-150">
+                      <div className="mt-2 bg-white rounded-2xl border border-slate-200/80 shadow-lg p-1.5 space-y-1 max-h-64 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:#CBD5E1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full animate-in fade-in slide-in-from-top-2 duration-150">
                         {availableLanguages.map((lang) => {
                           const isSelected = language === lang.code;
                           return (
@@ -502,7 +524,7 @@ export default function Navbar() {
             </div>
 
             {/* Language Grid */}
-            <div className="grid grid-cols-2 gap-2.5 max-h-[60vh] overflow-y-auto py-1 pr-0.5">
+            <div className="grid grid-cols-2 gap-2.5 max-h-[60vh] overflow-y-auto py-1 pr-1 [scrollbar-width:thin] [scrollbar-color:#CBD5E1_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-slate-300 [&::-webkit-scrollbar-thumb]:rounded-full">
               {availableLanguages.map((lang) => {
                 const isSelected = language === lang.code;
                 return (
