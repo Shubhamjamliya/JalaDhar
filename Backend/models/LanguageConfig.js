@@ -64,11 +64,7 @@ const languageConfigSchema = new mongoose.Schema({
       { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', badge: 'த', isEnabled: true, isDefault: false, sortOrder: 4 },
       { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', badge: 'ಕ', isEnabled: true, isDefault: false, sortOrder: 5 },
       { code: 'mr', name: 'Marathi', nativeName: 'मराठी', badge: 'म', isEnabled: true, isDefault: false, sortOrder: 6 },
-      { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', badge: 'ଓ', isEnabled: true, isDefault: false, sortOrder: 7 },
-      { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', badge: 'বা', isEnabled: false, isDefault: false, sortOrder: 8 },
-      { code: 'gu', name: 'Gujarati', nativeName: 'ગુજરાતી', badge: 'ગુ', isEnabled: false, isDefault: false, sortOrder: 9 },
-      { code: 'pa', name: 'Punjabi', nativeName: 'ਪੰਜਾਬੀ', badge: 'ਪੰ', isEnabled: false, isDefault: false, sortOrder: 10 },
-      { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം', badge: 'മ', isEnabled: false, isDefault: false, sortOrder: 11 }
+      { code: 'or', name: 'Odia', nativeName: 'ଓଡ଼ିଆ', badge: 'ଓ', isEnabled: true, isDefault: false, sortOrder: 7 }
     ]
   },
   translationProvider: {

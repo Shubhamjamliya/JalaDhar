@@ -612,22 +612,35 @@ const addSupportedLanguage = async (req, res) => {
     }
 
     // Check if code already exists
-    const exists = config.supportedLanguages.some(l => l.code === cleanCode);
-    if (exists) {
-      return res.status(400).json({ success: false, message: `Language with code '${cleanCode}' already exists in configuration` });
+    const existingIndex = config.supportedLanguages.findIndex(l => l.code === cleanCode);
+    let langItem;
+
+    if (existingIndex !== -1) {
+      const existing = config.supportedLanguages[existingIndex];
+      // If it exists and is already enabled, reject duplicate
+      if (existing.isEnabled) {
+        return res.status(400).json({ success: false, message: `Language with code '${cleanCode}' already exists in configuration` });
+      }
+
+      // If it exists but was disabled (e.g. from initial seed), re-enable and update details
+      existing.isEnabled = true;
+      existing.name = name.trim();
+      existing.nativeName = nativeName.trim();
+      existing.badge = (badge || cleanCode.toUpperCase()).trim();
+      langItem = existing;
+    } else {
+      langItem = {
+        code: cleanCode,
+        name: name.trim(),
+        nativeName: nativeName.trim(),
+        badge: (badge || cleanCode.toUpperCase()).trim(),
+        isEnabled: Boolean(isEnabled),
+        isDefault: false,
+        sortOrder: config.supportedLanguages.length + 1
+      };
+      config.supportedLanguages.push(langItem);
     }
 
-    const newLang = {
-      code: cleanCode,
-      name: name.trim(),
-      nativeName: nativeName.trim(),
-      badge: (badge || cleanCode.toUpperCase()).trim(),
-      isEnabled: Boolean(isEnabled),
-      isDefault: false,
-      sortOrder: config.supportedLanguages.length + 1
-    };
-
-    config.supportedLanguages.push(newLang);
     config.updatedBy = adminId;
     await config.save();
     broadcastLanguageConfigUpdate(config);
@@ -654,7 +667,7 @@ const addSupportedLanguage = async (req, res) => {
       success: true,
       message: `Language '${name} (${nativeName})' added successfully.${autoTranslatedCount > 0 ? ` Translated ${autoTranslatedCount} platform keys using Google Maps API.` : ''}`,
       data: {
-        language: newLang,
+        language: langItem,
         autoTranslatedCount,
         allLanguages: config.supportedLanguages
       }
