@@ -29,6 +29,8 @@ const ServicesPage = lazy(() => import("./modules/landing/pages/ServicesPage"));
 const HowItWorksPage = lazy(() => import("./modules/landing/pages/HowItWorksPage"));
 const FaqsPage = lazy(() => import("./modules/landing/pages/FaqsPage"));
 const ContactPage = lazy(() => import("./modules/landing/pages/ContactPage"));
+const TermsPage = lazy(() => import("./modules/landing/pages/TermsPage"));
+const PrivacyPage = lazy(() => import("./modules/landing/pages/PrivacyPage"));
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
 const UserSignup = lazy(() => import("./modules/user/user-pages/UserSignup"));
 const UserOTPVerification = lazy(() => import("./modules/user/user-pages/UserOTPVerification"));
@@ -264,6 +266,87 @@ function App() {
                                         element={
                                             <Suspense fallback={<LoadingSpinner />}>
                                                 <ContactPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/privacy"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <PrivacyPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/privacy-policy"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <PrivacyPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/terms"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <TermsPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/terms-and-conditions"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <TermsPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/refund-policy"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <TermsPage defaultTab="cancellation" />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/cancellation-policy"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <TermsPage defaultTab="cancellation" />
+                                            </Suspense>
+                                        }
+                                    />
+                                    {/* Aliases for User / Vendor DoorMeets-style routes */}
+                                    <Route
+                                        path="/user/terms-and-conditions"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <TermsPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/user/terms"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <TermsPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/user/privacy-policy"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <PrivacyPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/user/privacy"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <PrivacyPage />
                                             </Suspense>
                                         }
                                     />

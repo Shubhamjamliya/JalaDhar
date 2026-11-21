@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
     IoDocumentTextOutline,
@@ -13,11 +13,37 @@ import {
     IoChevronUpOutline
 } from "react-icons/io5";
 import { VENDOR_EXPERT_FAQS } from "./VendorHelpSupport";
+import { getPublicSettings } from "../../../services/settingsApi";
 
 export default function VendorPolicyPage() {
     const location = useLocation();
     const navigate = useNavigate();
     const [openFaq, setOpenFaq] = useState(null);
+    const [dynamicSettings, setDynamicSettings] = useState({});
+    const [loadingPolicy, setLoadingPolicy] = useState(true);
+
+    useEffect(() => {
+        const fetchPolicies = async () => {
+            try {
+                setLoadingPolicy(true);
+                const res = await getPublicSettings('policy');
+                if (res.success && res.data?.settings) {
+                    const map = {};
+                    res.data.settings.forEach(s => {
+                        if (s.value && typeof s.value === 'string' && s.value.trim().length > 20) {
+                            map[s.key] = s.value;
+                        }
+                    });
+                    setDynamicSettings(map);
+                }
+            } catch (e) {
+                console.error("Error fetching vendor policies:", e);
+            } finally {
+                setLoadingPolicy(false);
+            }
+        };
+        fetchPolicies();
+    }, []);
 
     const toggleFaq = (index) => {
         setOpenFaq(openFaq === index ? null : index);
@@ -100,37 +126,44 @@ export default function VendorPolicyPage() {
                             </p>
                         </div>
 
-                        <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">1. Scope of Engagement</h3>
-                                <p>
-                                    As an Expert Partner on the Jaladhaara platform, you act as an independent geoscientific consultant providing hydrogeological field surveys, VES readings, and digital report compilation for client sites.
-                                </p>
-                            </section>
+                        {dynamicSettings.expert_agreement ? (
+                            <div 
+                                className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 prose-sm max-w-none [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:text-sm [&_h3]:mt-4 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1"
+                                dangerouslySetInnerHTML={{ __html: dynamicSettings.expert_agreement }}
+                            />
+                        ) : (
+                            <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">1. Scope of Engagement</h3>
+                                    <p>
+                                        As an Expert Partner on the Jaladhaara platform, you act as an independent geoscientific consultant providing hydrogeological field surveys, VES readings, and digital report compilation for client sites.
+                                    </p>
+                                </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">2. Scientific Integrity &amp; Equipment Standards</h3>
-                                <ul className="list-disc pl-4 space-y-1">
-                                    <li>Experts agree to utilize calibrated geoscientific instruments (resistivity meters, VES setups, satellite data interpretation tools).</li>
-                                    <li>Surveys must adhere to standard geological methodology and objective field observations.</li>
-                                    <li>Report recommendations must accurately reflect electrical sounding curves, rock formation data, and local aquifer characteristics.</li>
-                                </ul>
-                            </section>
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">2. Scientific Integrity &amp; Equipment Standards</h3>
+                                    <ul className="list-disc pl-4 space-y-1">
+                                        <li>Experts agree to utilize calibrated geoscientific instruments (resistivity meters, VES setups, satellite data interpretation tools).</li>
+                                        <li>Surveys must adhere to standard geological methodology and objective field observations.</li>
+                                        <li>Report recommendations must accurately reflect electrical sounding curves, rock formation data, and local aquifer characteristics.</li>
+                                    </ul>
+                                </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">3. Payouts, Commissions &amp; Tax Compliance</h3>
-                                <p>
-                                    Payouts are credited directly to your registered Jaladhaara Wallet upon client survey completion and digital report approval. Applicable platform facilitation fees and statutory GST/TDS deductions will be itemized on your payout invoices.
-                                </p>
-                            </section>
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">3. Payouts, Commissions &amp; Tax Compliance</h3>
+                                    <p>
+                                        Payouts are credited directly to your registered Jaladhaara Wallet upon client survey completion and digital report approval. Applicable platform facilitation fees and statutory GST/TDS deductions will be itemized on your payout invoices.
+                                    </p>
+                                </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">4. Professional Ethics &amp; Confidentiality</h3>
-                                <p>
-                                    Experts must maintain professionalism during client interactions, respect land boundaries, and protect client contact privacy. Solicitations outside the Jaladhaara platform are strictly prohibited.
-                                </p>
-                            </section>
-                        </div>
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">4. Professional Ethics &amp; Confidentiality</h3>
+                                    <p>
+                                        Experts must maintain professionalism during client interactions, respect land boundaries, and protect client contact privacy. Solicitations outside the Jaladhaara platform are strictly prohibited.
+                                    </p>
+                                </section>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -146,28 +179,35 @@ export default function VendorPolicyPage() {
                             </p>
                         </div>
 
-                        <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">1. Data Collection &amp; Identity Verification</h3>
-                                <p>
-                                    We collect professional verification data including educational degrees, geological experience credentials, identity proof (Aadhaar/PAN), and banking payout details to verify your expert profile.
-                                </p>
-                            </section>
+                        {dynamicSettings.privacy_policy ? (
+                            <div 
+                                className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 prose-sm max-w-none [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:text-sm [&_h3]:mt-4 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1"
+                                dangerouslySetInnerHTML={{ __html: dynamicSettings.privacy_policy }}
+                            />
+                        ) : (
+                            <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">1. Data Collection &amp; Identity Verification</h3>
+                                    <p>
+                                        We collect professional verification data including educational degrees, geological experience credentials, identity proof (Aadhaar/PAN), and banking payout details to verify your expert profile.
+                                    </p>
+                                </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">2. Location &amp; Dispatch Processing</h3>
-                                <p>
-                                    Location coordinates are accessed strictly while using the application to pair you with nearby survey requests and provide navigational routing to land sites.
-                                </p>
-                            </section>
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">2. Location &amp; Dispatch Processing</h3>
+                                    <p>
+                                        Location coordinates are accessed strictly while using the application to pair you with nearby survey requests and provide navigational routing to land sites.
+                                    </p>
+                                </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">3. Data Confidentiality &amp; Security</h3>
-                                <p>
-                                    Your personal identity documents and banking credentials are encrypted using industry-standard AES-256 protocols. We do not sell or monetize expert partner data to third-party advertisers.
-                                </p>
-                            </section>
-                        </div>
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">3. Data Confidentiality &amp; Security</h3>
+                                    <p>
+                                        Your personal identity documents and banking credentials are encrypted using industry-standard AES-256 protocols. We do not sell or monetize expert partner data to third-party advertisers.
+                                    </p>
+                                </section>
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -183,28 +223,35 @@ export default function VendorPolicyPage() {
                             </p>
                         </div>
 
-                        <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">1. Platform Nature</h3>
-                                <p>
-                                    Jaladhaara Hydrogeological Services Pvt. Ltd. operates as an e-commerce marketplace platform under Section 9(5) / Section 52 of the CGST Act. The platform facilitates direct connections between landowners and hydrogeologists.
-                                </p>
-                            </section>
+                        {dynamicSettings.terms_of_service ? (
+                            <div 
+                                className="text-xs sm:text-sm text-slate-700 leading-relaxed space-y-3 prose-sm max-w-none [&_h3]:font-bold [&_h3]:text-slate-900 [&_h3]:text-sm [&_h3]:mt-4 [&_p]:mb-2 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mb-1"
+                                dangerouslySetInnerHTML={{ __html: dynamicSettings.terms_of_service }}
+                            />
+                        ) : (
+                            <div className="space-y-4 text-xs text-slate-600 leading-relaxed">
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">1. Platform Nature</h3>
+                                    <p>
+                                        Jaladhaara Hydrogeological Services Pvt. Ltd. operates as an e-commerce marketplace platform under Section 9(5) / Section 52 of the CGST Act. The platform facilitates direct connections between landowners and hydrogeologists.
+                                    </p>
+                                </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">2. Geological &amp; Drilling Limitation of Liability</h3>
-                                <p>
-                                    Groundwater survey reports represent scientific interpretation based on geophysical instruments and field readings. Groundwater yield, borewell depth, and drilling success depend on dynamic natural geological factors and cannot be guaranteed with 100% certainty.
-                                </p>
-                            </section>
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">2. Geological &amp; Drilling Limitation of Liability</h3>
+                                    <p>
+                                        Groundwater survey reports represent scientific interpretation based on geophysical instruments and field readings. Groundwater yield, borewell depth, and drilling success depend on dynamic natural geological factors and cannot be guaranteed with 100% certainty.
+                                    </p>
+                                </section>
 
-                            <section className="space-y-1.5">
-                                <h3 className="font-bold text-slate-800 text-sm">3. Cancellations &amp; Disputes</h3>
-                                <p>
-                                    Dispute claims arising from site access issues, inclement weather, or report revisions are managed through the Jaladhaara Partner Dispute Resolution Desk in accordance with standard platform SLAs.
-                                </p>
-                            </section>
-                        </div>
+                                <section className="space-y-1.5">
+                                    <h3 className="font-bold text-slate-800 text-sm">3. Cancellations &amp; Disputes</h3>
+                                    <p>
+                                        Dispute claims arising from site access issues, inclement weather, or report revisions are managed through the Jaladhaara Partner Dispute Resolution Desk in accordance with standard platform SLAs.
+                                    </p>
+                                </section>
+                            </div>
+                        )}
                     </div>
                 )}
 

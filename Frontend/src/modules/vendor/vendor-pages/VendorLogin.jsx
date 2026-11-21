@@ -19,7 +19,6 @@ export default function VendorLogin() {
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [showTermsModal, setShowTermsModal] = useState(false);
     const navigate = useNavigate();
     const { login, isAuthenticated } = useVendorAuth();
     const toast = useToast();
@@ -193,13 +192,19 @@ export default function VendorLogin() {
                     <div className="mt-6 pt-4 border-t border-slate-100 text-center space-y-2">
                         <p className="text-xs text-slate-500 font-medium">
                             By logging in, you agree to our{" "}
-                            <button
-                                type="button"
-                                onClick={() => setShowTermsModal(true)}
+                            <Link
+                                to="/terms-and-conditions"
                                 className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
                             >
-                                General Terms & Conditions
-                            </button>
+                                Terms & Conditions
+                            </Link>
+                            {" "}and{" "}
+                            <Link
+                                to="/privacy-policy"
+                                className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
+                            >
+                                Privacy Policy
+                            </Link>
                         </p>
                         <p className="text-xs sm:text-sm font-medium text-slate-500">
                             Don't have an account?{" "}
@@ -213,10 +218,6 @@ export default function VendorLogin() {
                     </div>
                 </div>
             </div>
-
-            {showTermsModal && (
-                <PolicyModal type="general" onClose={() => setShowTermsModal(false)} />
-            )}
         </div>
     );
 }

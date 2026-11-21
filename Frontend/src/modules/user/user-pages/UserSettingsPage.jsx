@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import {
     IoSettingsOutline,
     IoPersonOutline,
@@ -222,20 +222,20 @@ export default function UserSettingsPage() {
                             <span className="text-xs font-black text-blue-900">Jaladhaara User Agreement</span>
                             <IoChevronForwardOutline className="text-blue-500" />
                         </div>
-                        <div
-                            onClick={() => setActivePolicy("terms")}
+                        <Link
+                            to="/user/terms-and-conditions"
                             className="p-4 bg-gray-50/80 hover:bg-gray-100 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer transition-colors"
                         >
-                            <span className="text-xs font-bold text-gray-800">Terms of Service</span>
+                            <span className="text-xs font-bold text-gray-800">Terms & Conditions</span>
                             <IoChevronForwardOutline className="text-gray-400" />
-                        </div>
-                        <div
-                            onClick={() => setActivePolicy("privacy")}
+                        </Link>
+                        <Link
+                            to="/user/privacy-policy"
                             className="p-4 bg-gray-50/80 hover:bg-gray-100 rounded-2xl border border-gray-100 flex items-center justify-between cursor-pointer transition-colors"
                         >
                             <span className="text-xs font-bold text-gray-800">Privacy Policy</span>
                             <IoChevronForwardOutline className="text-gray-400" />
-                        </div>
+                        </Link>
                     </div>
                 </div>
             </div>

@@ -294,27 +294,25 @@ export default function UserSignup() {
                                 </button>
                                 <span className="text-xs text-slate-600 leading-tight">
                                     I agree to the{" "}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openPolicy("general");
-                                        }}
+                                    <a
+                                        href="/user/terms-and-conditions"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
                                         className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
                                     >
                                         Terms & Conditions
-                                    </button>{" "}
+                                    </a>{" "}
                                     and{" "}
-                                    <button
-                                        type="button"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            openPolicy("privacy");
-                                        }}
+                                    <a
+                                        href="/user/privacy-policy"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        onClick={(e) => e.stopPropagation()}
                                         className="font-bold text-[#0A84FF] underline hover:text-blue-700 transition-colors cursor-pointer"
                                     >
                                         Privacy Policy
-                                    </button>
+                                    </a>
                                 </span>
                             </div>
                         </div>

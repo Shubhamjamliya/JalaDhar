@@ -1,13 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
 import { GooglePlayBadge, AppStoreBadge } from './StoreBadges';
-import { MapPin, MessageCircle, Droplets, X } from 'lucide-react';
+import { MapPin, MessageCircle, Droplets } from 'lucide-react';
 
 export default function Footer({ cms = (path, fallback) => fallback }) {
-  const [isTermsModalOpen, setIsTermsModalOpen] = useState(false);
-  const [isPrivacyModalOpen, setIsPrivacyModalOpen] = useState(false);
-
   return (
     <>
       <footer className="border-t border-[var(--color-border)] bg-[var(--color-bg)] pt-5 sm:pt-8 pb-5 sm:pb-8 px-4 sm:px-6 lg:px-8 xl:px-12 w-full">
@@ -57,20 +54,20 @@ export default function Footer({ cms = (path, fallback) => fallback }) {
                     </Link>
                   </li>
                   <li>
-                    <button 
-                      onClick={() => setIsTermsModalOpen(true)} 
-                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors text-left cursor-pointer"
+                    <Link 
+                      to="/terms" 
+                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
                     >
                       Terms & Conditions
-                    </button>
+                    </Link>
                   </li>
                   <li>
-                    <button 
-                      onClick={() => setIsPrivacyModalOpen(true)} 
-                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors text-left cursor-pointer"
+                    <Link 
+                      to="/privacy" 
+                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
                     >
                       Privacy Policy
-                    </button>
+                    </Link>
                   </li>
                 </ul>
               </div>
@@ -217,83 +214,6 @@ export default function Footer({ cms = (path, fallback) => fallback }) {
           </div>
         </div>
       </footer>
-
-      {/* Terms & Conditions Modal */}
-      {isTermsModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setIsTermsModalOpen(false)}
-        >
-          <div 
-            className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)]">Terms & Conditions</h2>
-              <button 
-                onClick={() => setIsTermsModalOpen(false)}
-                className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 sm:p-8 overflow-y-auto space-y-4 text-[var(--color-text-secondary)] leading-relaxed text-sm">
-              <p><strong>Effective Date:</strong> July 22, 2026</p>
-              <p>Welcome to Jaladhaara, India's first dedicated groundwater survey booking platform, operated by Jaladhaara Groundwater Survey Pvt. Ltd. By accessing our platform, you agree to comply with and be bound by these Terms & Conditions.</p>
-
-              <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">1. Nature of Platform</h4>
-              <p>Jaladhaara operates as a digital intermediary connecting clients with independent, verified groundwater survey professionals. Jaladhaara does not drill borewells, nor does it guarantee the presence, depth, quality, or discharge rate of underground water, which is dictated entirely by natural hydrogeological conditions.</p>
-
-              <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">2. Scientific Investigations</h4>
-              <p>All surveys conducted by registered experts use geophysical methods (resistivity, ADMT, PQWT). These provide scientific assessments to reduce guesswork and increase probability of success, but cannot provide a 100% water strike guarantee.</p>
-
-              <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">3. User Obligations</h4>
-              <p>Users must provide accurate property access, site details, and ensure peaceful entry for the assigned survey expert.</p>
-
-              <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">4. Contact & Support</h4>
-              <p>For any queries regarding terms or bookings, contact us at: <a href="mailto:info@jaladhaaraapp.com" className="text-[var(--color-primary)] font-semibold">info@jaladhaaraapp.com</a></p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Privacy Policy Modal */}
-      {isPrivacyModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-black/60 backdrop-blur-sm animate-fade-in"
-          onClick={() => setIsPrivacyModalOpen(false)}
-        >
-          <div 
-            className="relative w-full max-w-3xl max-h-[90vh] bg-white rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-fade-up"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center justify-between p-6 sm:p-8 border-b border-gray-100 bg-gray-50/50">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-[var(--color-text-primary)]">Privacy Policy</h2>
-              <button 
-                onClick={() => setIsPrivacyModalOpen(false)}
-                className="w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 hover:text-gray-800 transition-colors cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            
-            <div className="p-6 sm:p-8 overflow-y-auto space-y-4 text-[var(--color-text-secondary)] leading-relaxed text-sm">
-              <p><strong>Effective Date:</strong> July 22, 2026</p>
-              <p>Jaladhaara Groundwater Survey Pvt. Ltd. respects your privacy and is dedicated to protecting personal information. This policy outlines how information is collected, processed, and secured.</p>
-
-              <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">1. Information Collected</h4>
-              <p>We collect essential operational details: name, phone number, email, property location for survey coordination, and digital booking transaction data.</p>
-
-              <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">2. Data Security & Sharing</h4>
-              <p>We never sell or rent your personal data to advertisers. Information is only shared with the specific verified expert assigned to your survey and certified payment gateways for transaction processing.</p>
-
-              <h4 className="font-bold text-[var(--color-text-primary)] text-base pt-2">3. Inquiries</h4>
-              <p>For data inquiries or account deletion requests, write to: <a href="mailto:info@jaladhaaraapp.com" className="text-[var(--color-primary)] font-semibold">info@jaladhaaraapp.com</a></p>
-            </div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

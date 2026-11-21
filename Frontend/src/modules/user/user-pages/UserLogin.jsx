@@ -20,7 +20,6 @@ export default function UserLogin() {
     // Form state
     const [phone, setPhone] = useState(() => location.state?.phone || location.state?.mobile || "");
     const [loading, setLoading] = useState(false);
-    const [showTermsModal, setShowTermsModal] = useState(false);
     const [showLangMenu, setShowLangMenu] = useState(false);
     const langDropdownRef = useRef(null);
     
@@ -215,29 +214,23 @@ export default function UserLogin() {
                     <div className="mt-6 pt-4 border-t border-slate-100 text-center">
                         <p className="text-xs text-slate-500 font-medium leading-relaxed">
                             By continuing, you agree to our{" "}
-                            <button
-                                type="button"
-                                onClick={() => setShowTermsModal(true)}
+                            <Link
+                                to="/user/terms-and-conditions"
                                 className="font-bold text-[#0A84FF] hover:underline cursor-pointer"
                             >
                                 Terms & Conditions
-                            </button>
+                            </Link>
                             {" "}and{" "}
-                            <button
-                                type="button"
-                                onClick={() => setShowTermsModal(true)}
+                            <Link
+                                to="/user/privacy-policy"
                                 className="font-bold text-[#0A84FF] hover:underline cursor-pointer"
                             >
                                 Privacy Policy
-                            </button>.
+                            </Link>.
                         </p>
                     </div>
                 </main>
             </div>
-
-            {showTermsModal && (
-                <PolicyModal type="general" onClose={() => setShowTermsModal(false)} />
-            )}
         </div>
     );
 }
