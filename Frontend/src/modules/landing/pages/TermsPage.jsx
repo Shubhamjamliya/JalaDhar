@@ -69,6 +69,11 @@ export default function TermsPage() {
   const location = useLocation();
   const [contentHtml, setContentHtml] = useState('');
   const [loading, setLoading] = useState(true);
+  const [companyInfo, setCompanyInfo] = useState({
+    name: 'Jaladhaara Groundwater Survey Pvt. Ltd.',
+    address: 'Hyderabad, Telangana, India',
+    email: 'info@jaladhaaraapp.com'
+  });
 
   useEffect(() => {
     document.title = "Terms & Conditions | Jaladhaara";
@@ -77,9 +82,23 @@ export default function TermsPage() {
     const loadPolicy = async () => {
       try {
         setLoading(true);
-        const res = await getPublicSettings('policy');
-        if (res.success && res.data?.settings) {
-          const item = res.data.settings.find(
+        const [policyRes, billingRes] = await Promise.allSettled([
+          getPublicSettings('policy'),
+          getPublicSettings('billing')
+        ]);
+
+        if (billingRes.status === 'fulfilled' && billingRes.value?.success && billingRes.value.data?.settings) {
+          const bSettings = billingRes.value.data.settings;
+          const getVal = (k) => bSettings.find(s => s.key === k)?.value;
+          setCompanyInfo({
+            name: getVal('BILLING_COMPANY_NAME') || 'Jaladhaara Groundwater Survey Pvt. Ltd.',
+            address: getVal('BILLING_ADDRESS') || 'Hyderabad, Telangana, India',
+            email: getVal('BILLING_EMAIL') || 'info@jaladhaaraapp.com'
+          });
+        }
+
+        if (policyRes.status === 'fulfilled' && policyRes.value?.success && policyRes.value.data?.settings) {
+          const item = policyRes.value.data.settings.find(
             (s) => s.key === 'terms_of_service' || s.key === 'general_terms'
           );
           if (item?.value && item.value.trim().length > 30) {

@@ -74,6 +74,11 @@ export default function PrivacyPage() {
   const navigate = useNavigate();
   const [contentHtml, setContentHtml] = useState('');
   const [loading, setLoading] = useState(true);
+  const [companyInfo, setCompanyInfo] = useState({
+    name: 'Jaladhaara Groundwater Survey Pvt. Ltd.',
+    address: 'Hyderabad, Telangana, India',
+    email: 'info@jaladhaaraapp.com'
+  });
 
   useEffect(() => {
     document.title = "Privacy Policy | Jaladhaara";
@@ -82,9 +87,23 @@ export default function PrivacyPage() {
     const loadPolicy = async () => {
       try {
         setLoading(true);
-        const res = await getPublicSettings('policy');
-        if (res.success && res.data?.settings) {
-          const item = res.data.settings.find((s) => s.key === 'privacy_policy');
+        const [policyRes, billingRes] = await Promise.allSettled([
+          getPublicSettings('policy'),
+          getPublicSettings('billing')
+        ]);
+
+        if (billingRes.status === 'fulfilled' && billingRes.value?.success && billingRes.value.data?.settings) {
+          const bSettings = billingRes.value.data.settings;
+          const getVal = (k) => bSettings.find(s => s.key === k)?.value;
+          setCompanyInfo({
+            name: getVal('BILLING_COMPANY_NAME') || 'Jaladhaara Groundwater Survey Pvt. Ltd.',
+            address: getVal('BILLING_ADDRESS') || 'Hyderabad, Telangana, India',
+            email: getVal('BILLING_EMAIL') || 'info@jaladhaaraapp.com'
+          });
+        }
+
+        if (policyRes.status === 'fulfilled' && policyRes.value?.success && policyRes.value.data?.settings) {
+          const item = policyRes.value.data.settings.find((s) => s.key === 'privacy_policy');
           if (item?.value && item.value.trim().length > 30) {
             setContentHtml(item.value);
             return;
@@ -157,16 +176,16 @@ export default function PrivacyPage() {
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Legal Entity: </span>
-                  <span>Jaladhaara Groundwater Survey Pvt. Ltd.</span>
+                  <span>{companyInfo.name}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Registered Office: </span>
-                  <span>Hyderabad, Telangana, India</span>
+                  <span>{companyInfo.address}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Support Email: </span>
-                  <a href="mailto:info@jaladhaaraapp.com" className="text-blue-600 font-semibold underline">
-                    info@jaladhaaraapp.com
+                  <a href={`mailto:${companyInfo.email}`} className="text-blue-600 font-semibold underline">
+                    {companyInfo.email}
                   </a>
                 </div>
                 <div>
@@ -175,14 +194,14 @@ export default function PrivacyPage() {
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Last Updated: </span>
-                  <span>2026</span>
+                  <span>{new Date().getFullYear()}</span>
                 </div>
               </div>
             </div>
 
             {/* Introductory Preamble */}
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 pb-5 border-b border-slate-100">
-              Jaladhaara Groundwater Survey Pvt. Ltd. ("Jaladhaara", "we", "our") respects your privacy and works to keep your personal information safe. This Privacy Policy explains what personal data Jaladhaara collects, how it uses and stores it, who it may share it with, and how it protects it when you use the Jaladhaara applications, website, and related services.
+              {companyInfo.name} ("Jaladhaara", "we", "our") respects your privacy and works to keep your personal information safe. This Privacy Policy explains what personal data Jaladhaara collects, how it uses and stores it, who it may share it with, and how it protects it when you use the Jaladhaara applications, website, and related services.
             </p>
 
             {/* ── Document Body Content ── */}
@@ -201,7 +220,7 @@ export default function PrivacyPage() {
 
           {/* Simple Bottom Copyright */}
           <div className="text-center py-6 text-xs text-slate-400">
-            &copy; {new Date().getFullYear()} Jaladhaara Groundwater Survey Pvt. Ltd. All rights reserved.
+            &copy; {new Date().getFullYear()} {companyInfo.name}. All rights reserved.
           </div>
         </div>
       </main>
