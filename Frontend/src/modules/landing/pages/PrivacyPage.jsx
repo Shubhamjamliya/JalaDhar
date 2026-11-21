@@ -72,12 +72,16 @@ const DEFAULT_PRIVACY_HTML = `
 
 export default function PrivacyPage() {
   const navigate = useNavigate();
-  const [contentHtml, setContentHtml] = useState('');
   const [loading, setLoading] = useState(true);
-  const [companyInfo, setCompanyInfo] = useState({
-    name: 'Jaladhaara Groundwater Survey Pvt. Ltd.',
+  const [docConfig, setDocConfig] = useState({
+    platform: 'Jaladhaara (Web, Android & iOS)',
+    companyName: 'Jaladhaara Groundwater Survey Pvt. Ltd.',
     address: 'Hyderabad, Telangana, India',
-    email: 'info@jaladhaaraapp.com'
+    email: 'info@jaladhaaraapp.com',
+    effectiveDate: '01/09/2026',
+    lastUpdated: '2026',
+    preamble: 'Jaladhaara Groundwater Survey Pvt. Ltd. ("Jaladhaara", "we", "our") respects your privacy and works to keep your personal information safe. This Privacy Policy explains what personal data Jaladhaara collects, how it uses and stores it, who it may share it with, and how it protects it when you use the Jaladhaara applications, website, and related services.',
+    privacyPolicy: '',
   });
 
   useEffect(() => {
@@ -92,27 +96,33 @@ export default function PrivacyPage() {
           getPublicSettings('billing')
         ]);
 
-        if (billingRes.status === 'fulfilled' && billingRes.value?.success && billingRes.value.data?.settings) {
-          const bSettings = billingRes.value.data.settings;
-          const getVal = (k) => bSettings.find(s => s.key === k)?.value;
-          setCompanyInfo({
-            name: getVal('BILLING_COMPANY_NAME') || 'Jaladhaara Groundwater Survey Pvt. Ltd.',
-            address: getVal('BILLING_ADDRESS') || 'Hyderabad, Telangana, India',
-            email: getVal('BILLING_EMAIL') || 'info@jaladhaaraapp.com'
-          });
-        }
+        const pSettings = policyRes.status === 'fulfilled' && policyRes.value?.success ? (policyRes.value.data?.settings || []) : [];
+        const bSettings = billingRes.status === 'fulfilled' && billingRes.value?.success ? (billingRes.value.data?.settings || []) : [];
 
-        if (policyRes.status === 'fulfilled' && policyRes.value?.success && policyRes.value.data?.settings) {
-          const item = policyRes.value.data.settings.find((s) => s.key === 'privacy_policy');
-          if (item?.value && item.value.trim().length > 30) {
-            setContentHtml(item.value);
-            return;
-          }
-        }
-        setContentHtml(DEFAULT_PRIVACY_HTML);
+        const getP = (k) => pSettings.find(s => s.key === k)?.value;
+        const getB = (k) => bSettings.find(s => s.key === k)?.value;
+
+        const companyName = getP('privacy_company_name') || getB('BILLING_COMPANY_NAME') || 'Jaladhaara Groundwater Survey Pvt. Ltd.';
+        const address = getP('privacy_company_address') || getB('BILLING_ADDRESS') || 'Hyderabad, Telangana, India';
+        const email = getP('privacy_contact_email') || getB('BILLING_EMAIL') || 'info@jaladhaaraapp.com';
+        const platform = getP('privacy_platform_scope') || 'Jaladhaara (Web, Android & iOS)';
+        const effectiveDate = getP('privacy_effective_date') || '01/09/2026';
+        const lastUpdated = getP('privacy_last_updated') || new Date().getFullYear().toString();
+        const preamble = getP('privacy_preamble') || `${companyName} ("Jaladhaara", "we", "our") respects your privacy and works to keep your personal information safe. This Privacy Policy explains what personal data Jaladhaara collects, how it uses and stores it, who it may share it with, and how it protects it when you use the Jaladhaara applications, website, and related services.`;
+        const privacyPolicy = getP('privacy_policy') || '';
+
+        setDocConfig({
+          platform,
+          companyName,
+          address,
+          email,
+          effectiveDate,
+          lastUpdated,
+          preamble,
+          privacyPolicy: (privacyPolicy && privacyPolicy.trim().length > 15) ? privacyPolicy : '',
+        });
       } catch (err) {
         console.error("Failed to load privacy policy:", err);
-        setContentHtml(DEFAULT_PRIVACY_HTML);
       } finally {
         setLoading(false);
       }
@@ -172,37 +182,39 @@ export default function PrivacyPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="font-semibold text-slate-700">Platform: </span>
-                  <span>Jaladhaara (Web, Android &amp; iOS)</span>
+                  <span>{docConfig.platform}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Legal Entity: </span>
-                  <span>{companyInfo.name}</span>
+                  <span>{docConfig.companyName}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Registered Office: </span>
-                  <span>{companyInfo.address}</span>
+                  <span>{docConfig.address}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Support Email: </span>
-                  <a href={`mailto:${companyInfo.email}`} className="text-blue-600 font-semibold underline">
-                    {companyInfo.email}
+                  <a href={`mailto:${docConfig.email}`} className="text-blue-600 font-semibold underline">
+                    {docConfig.email}
                   </a>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Effective Date: </span>
-                  <span>01/09/2026</span>
+                  <span>{docConfig.effectiveDate}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Last Updated: </span>
-                  <span>{new Date().getFullYear()}</span>
+                  <span>{docConfig.lastUpdated}</span>
                 </div>
               </div>
             </div>
 
             {/* Introductory Preamble */}
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 pb-5 border-b border-slate-100">
-              {companyInfo.name} ("Jaladhaara", "we", "our") respects your privacy and works to keep your personal information safe. This Privacy Policy explains what personal data Jaladhaara collects, how it uses and stores it, who it may share it with, and how it protects it when you use the Jaladhaara applications, website, and related services.
-            </p>
+            {docConfig.preamble && (
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 pb-5 border-b border-slate-100">
+                {docConfig.preamble}
+              </p>
+            )}
 
             {/* ── Document Body Content ── */}
             {loading ? (
@@ -210,17 +222,22 @@ export default function PrivacyPage() {
                 <div className="w-8 h-8 border-3 border-emerald-600 border-t-transparent rounded-full animate-spin" />
                 <span className="text-xs font-semibold">Loading official privacy policy...</span>
               </div>
+            ) : docConfig.privacyPolicy ? (
+              <div
+                className="clean-legal-body text-xs sm:text-sm text-slate-700 leading-relaxed"
+                dangerouslySetInnerHTML={{ __html: docConfig.privacyPolicy }}
+              />
             ) : (
               <div
                 className="clean-legal-body text-xs sm:text-sm text-slate-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: contentHtml }}
+                dangerouslySetInnerHTML={{ __html: DEFAULT_PRIVACY_HTML }}
               />
             )}
           </div>
 
           {/* Simple Bottom Copyright */}
           <div className="text-center py-6 text-xs text-slate-400">
-            &copy; {new Date().getFullYear()} {companyInfo.name}. All rights reserved.
+            &copy; {new Date().getFullYear()} {docConfig.companyName}. All rights reserved.
           </div>
         </div>
       </main>

@@ -32,6 +32,20 @@ const modules = {
 const formats = ["header","bold","italic","underline","strike","list","bullet","link","color","background"];
 
 const DEFAULT_POLICIES = {
+  terms_company_name: "",
+  terms_company_address: "",
+  terms_contact_email: "",
+  terms_platform_scope: "Jaladhaara (Web, Android & iOS)",
+  terms_effective_date: "01/09/2026",
+  terms_preamble: `These Terms & Conditions ("Terms") govern the rules and standards for using the Jaladhaara platform, applications, and groundwater survey booking services. By accessing or using the platform, registering an account, or requesting a survey, you confirm that you have read, understood, and agreed to these Terms.`,
+
+  privacy_company_name: "",
+  privacy_company_address: "",
+  privacy_contact_email: "",
+  privacy_platform_scope: "Jaladhaara (Web, Android & iOS)",
+  privacy_effective_date: "01/09/2026",
+  privacy_preamble: `Jaladhaara Groundwater Survey Pvt. Ltd. ("Jaladhaara", "we", "our") respects your privacy and works to keep your personal information safe. This Privacy Policy explains what personal data Jaladhaara collects, how it uses and stores it, who it may share it with, and how it protects it when you use the Jaladhaara applications, website, and related services.`,
+
   checkout_policy: `<p><strong>1. Booking &amp; Service Execution</strong></p><ul><li>You are booking a verified groundwater survey expert for your specific location.</li><li>Advance payment confirms your slot. The expert will visit on the scheduled date.</li></ul><p><strong>2. Cancellation &amp; Refunds</strong></p><ul><li>Cancel 24+ hours before schedule for a full 100% refund of the advance.</li><li>Cancel within 24 hours of schedule and incur a 50% cancellation fee.</li><li>If the expert arrives at the location but cannot survey due to customer-side issues, the advance is strictly non-refundable.</li></ul><p><strong>3. Reporting &amp; Balance Payment</strong></p><ul><li>The remaining 60% balance is payable after the physical survey is completed.</li><li>Your digital survey report is generated instantly once the balance is cleared.</li></ul>`,
   general_terms: `<ul><li>By creating an account or logging in, you agree to abide by Jaladhaara platform guidelines and privacy terms.</li><li>Users are responsible for maintaining the confidentiality of their credentials and account access.</li><li>Survey requests must represent genuine land testing requirements with accurate location data.</li></ul>`,
   booking_policy: `<ul><li><strong>Slot Booking:</strong> Bookings must be requested with an accurate land location and survey requirements.</li><li><strong>Confirmation:</strong> Your booking is confirmed once the advance payment is completed.</li><li><strong>Expert Assignment:</strong> A qualified groundwater survey expert will be assigned to your booking.</li></ul>`,
@@ -74,6 +88,105 @@ function PolicyBlock({ label, description, value, onChange, placeholder }) {
       </div>
       <div className="policy-editor-wrap rounded-xl overflow-hidden border border-slate-200 shadow-sm">
         <ReactQuill theme="snow" value={value} onChange={onChange} modules={modules} formats={formats} placeholder={placeholder} />
+      </div>
+    </div>
+  );
+}
+
+function DocumentMetaBlock({
+  docName,
+  platform,
+  onPlatformChange,
+  effectiveDate,
+  onEffectiveDateChange,
+  companyName,
+  onCompanyNameChange,
+  address,
+  onAddressChange,
+  email,
+  onEmailChange,
+  preamble,
+  onPreambleChange,
+}) {
+  return (
+    <div className="bg-slate-50/90 rounded-2xl border border-slate-200/80 p-4 sm:p-5 space-y-4">
+      <div className="border-b border-slate-200/60 pb-3">
+        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
+          <span className="w-2 h-2 rounded-full bg-blue-600"></span>
+          {docName} Document Header &amp; Metadata Box
+        </h3>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Controls the corporate card, entity details, and introductory preamble shown at the top of the public reader page.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-xs">
+        <div>
+          <label className="block font-semibold text-slate-700 mb-1">Platform Scope</label>
+          <input
+            type="text"
+            className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 font-medium transition-all"
+            value={platform || ""}
+            onChange={(e) => onPlatformChange(e.target.value)}
+            placeholder="e.g. Jaladhaara (Web, Android & iOS)"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold text-slate-700 mb-1">Effective Date</label>
+          <input
+            type="text"
+            className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 font-medium transition-all"
+            value={effectiveDate || ""}
+            onChange={(e) => onEffectiveDateChange(e.target.value)}
+            placeholder="e.g. 01/09/2026"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold text-slate-700 mb-1">
+            Legal Entity Name <span className="text-slate-400 font-normal">(Leave blank to use Billing Name)</span>
+          </label>
+          <input
+            type="text"
+            className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 font-medium transition-all"
+            value={companyName || ""}
+            onChange={(e) => onCompanyNameChange(e.target.value)}
+            placeholder="Defaults to Settings > Billing Company Name"
+          />
+        </div>
+        <div>
+          <label className="block font-semibold text-slate-700 mb-1">
+            Registered Office <span className="text-slate-400 font-normal">(Leave blank to use Billing Address)</span>
+          </label>
+          <input
+            type="text"
+            className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 font-medium transition-all"
+            value={address || ""}
+            onChange={(e) => onAddressChange(e.target.value)}
+            placeholder="Defaults to Settings > Billing Address"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block font-semibold text-slate-700 mb-1">
+            Support &amp; Grievance Email <span className="text-slate-400 font-normal">(Leave blank to use Billing Email)</span>
+          </label>
+          <input
+            type="email"
+            className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 font-medium transition-all"
+            value={email || ""}
+            onChange={(e) => onEmailChange(e.target.value)}
+            placeholder="Defaults to Settings > Billing Email"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="block font-semibold text-slate-700 mb-1">Introductory Preamble</label>
+          <textarea
+            rows={3}
+            className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none text-slate-800 font-medium resize-y leading-relaxed transition-all"
+            value={preamble || ""}
+            onChange={(e) => onPreambleChange(e.target.value)}
+            placeholder="Opening preamble displayed below the corporate metadata box..."
+          />
+        </div>
       </div>
     </div>
   );
@@ -146,8 +259,14 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
 
   const patch = useCallback((key, value) => {
     setPolicySettings((prev) => ({ ...prev, [key]: value }));
-    const sk = ["general_terms","terms_of_service"].includes(key) ? "legal"
-      : ["privacy_policy"].includes(key) ? "privacy"
+    const sk = [
+      "general_terms", "terms_of_service", "terms_company_name", "terms_company_address",
+      "terms_contact_email", "terms_platform_scope", "terms_effective_date", "terms_preamble"
+    ].includes(key) ? "legal"
+      : [
+        "privacy_policy", "privacy_company_name", "privacy_company_address",
+        "privacy_contact_email", "privacy_platform_scope", "privacy_effective_date", "privacy_preamble"
+      ].includes(key) ? "privacy"
       : ["checkout_policy","booking_policy","cancellation_policy","advance_payment_policy","remaining_payment_policy","refund_policy"].includes(key) ? "cancellation"
       : ["expert_agreement"].includes(key) ? "expert" : null;
     if (sk) setSectionState((prev) => ({ ...prev, [sk]: { ...prev[sk], saved: false } }));
@@ -158,8 +277,25 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
     setError("");
     try {
       const settingsMap = {
-        legal: [{ key: "general_terms", value: policySettings.general_terms }, { key: "terms_of_service", value: policySettings.terms_of_service }],
-        privacy: [{ key: "privacy_policy", value: policySettings.privacy_policy }],
+        legal: [
+          { key: "terms_company_name", value: policySettings.terms_company_name || "" },
+          { key: "terms_company_address", value: policySettings.terms_company_address || "" },
+          { key: "terms_contact_email", value: policySettings.terms_contact_email || "" },
+          { key: "terms_platform_scope", value: policySettings.terms_platform_scope || "Jaladhaara (Web, Android & iOS)" },
+          { key: "terms_effective_date", value: policySettings.terms_effective_date || "01/09/2026" },
+          { key: "terms_preamble", value: policySettings.terms_preamble || "" },
+          { key: "general_terms", value: policySettings.general_terms || "" },
+          { key: "terms_of_service", value: policySettings.terms_of_service || "" },
+        ],
+        privacy: [
+          { key: "privacy_company_name", value: policySettings.privacy_company_name || "" },
+          { key: "privacy_company_address", value: policySettings.privacy_company_address || "" },
+          { key: "privacy_contact_email", value: policySettings.privacy_contact_email || "" },
+          { key: "privacy_platform_scope", value: policySettings.privacy_platform_scope || "Jaladhaara (Web, Android & iOS)" },
+          { key: "privacy_effective_date", value: policySettings.privacy_effective_date || "01/09/2026" },
+          { key: "privacy_preamble", value: policySettings.privacy_preamble || "" },
+          { key: "privacy_policy", value: policySettings.privacy_policy || "" },
+        ],
         cancellation: [
           { key: "checkout_policy", value: policySettings.checkout_policy },
           { key: "booking_policy", value: policySettings.booking_policy },
@@ -301,6 +437,22 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
           {/* Terms & Conditions */}
           {activeTab === "legal" && (
             <SectionCard title="Terms & Conditions" description="Legal terms shown during login, registration, and booking confirmation" icon={IoDocumentTextOutline} color="blue" onSave={() => saveSection("legal")} saving={saving} saved={saved}>
+              <DocumentMetaBlock
+                docName="Terms & Conditions"
+                platform={policySettings.terms_platform_scope}
+                onPlatformChange={(v) => patch("terms_platform_scope", v)}
+                effectiveDate={policySettings.terms_effective_date}
+                onEffectiveDateChange={(v) => patch("terms_effective_date", v)}
+                companyName={policySettings.terms_company_name}
+                onCompanyNameChange={(v) => patch("terms_company_name", v)}
+                address={policySettings.terms_company_address}
+                onAddressChange={(v) => patch("terms_company_address", v)}
+                email={policySettings.terms_contact_email}
+                onEmailChange={(v) => patch("terms_contact_email", v)}
+                preamble={policySettings.terms_preamble}
+                onPreambleChange={(v) => patch("terms_preamble", v)}
+              />
+              <div className="border-t border-dashed border-slate-200" />
               <PolicyBlock label="General Terms & Conditions (Login / Registration)" description="Terms accepted by users during login and registration." value={policySettings.general_terms} onChange={(v) => patch("general_terms", v)} placeholder="Write general terms and conditions here…" />
               <div className="border-t border-dashed border-slate-200" />
               <PolicyBlock label="Terms of Service" description="General legal terms shown during survey flow and booking confirmation." value={policySettings.terms_of_service} onChange={(v) => patch("terms_of_service", v)} placeholder="Write your terms of service here…" />
@@ -310,6 +462,22 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
           {/* Privacy Policy */}
           {activeTab === "privacy" && (
             <SectionCard title="Privacy Policy" description="Data collection, usage, and protection policies shown to users" icon={IoShieldCheckmarkOutline} color="indigo" onSave={() => saveSection("privacy")} saving={saving} saved={saved}>
+              <DocumentMetaBlock
+                docName="Privacy Policy"
+                platform={policySettings.privacy_platform_scope}
+                onPlatformChange={(v) => patch("privacy_platform_scope", v)}
+                effectiveDate={policySettings.privacy_effective_date}
+                onEffectiveDateChange={(v) => patch("privacy_effective_date", v)}
+                companyName={policySettings.privacy_company_name}
+                onCompanyNameChange={(v) => patch("privacy_company_name", v)}
+                address={policySettings.privacy_company_address}
+                onAddressChange={(v) => patch("privacy_company_address", v)}
+                email={policySettings.privacy_contact_email}
+                onEmailChange={(v) => patch("privacy_contact_email", v)}
+                preamble={policySettings.privacy_preamble}
+                onPreambleChange={(v) => patch("privacy_preamble", v)}
+              />
+              <div className="border-t border-dashed border-slate-200" />
               <PolicyBlock label="Privacy Policy" description="Privacy policy details regarding user data collection and protection." value={policySettings.privacy_policy} onChange={(v) => patch("privacy_policy", v)} placeholder="Write your privacy policy here…" />
             </SectionCard>
           )}

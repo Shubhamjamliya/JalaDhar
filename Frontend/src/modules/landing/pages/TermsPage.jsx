@@ -67,12 +67,17 @@ const DEFAULT_TERMS_HTML = `
 export default function TermsPage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [contentHtml, setContentHtml] = useState('');
   const [loading, setLoading] = useState(true);
-  const [companyInfo, setCompanyInfo] = useState({
-    name: 'Jaladhaara Groundwater Survey Pvt. Ltd.',
+  const [docConfig, setDocConfig] = useState({
+    platform: 'Jaladhaara (Web, Android & iOS)',
+    companyName: 'Jaladhaara Groundwater Survey Pvt. Ltd.',
     address: 'Hyderabad, Telangana, India',
-    email: 'info@jaladhaaraapp.com'
+    email: 'info@jaladhaaraapp.com',
+    effectiveDate: '01/09/2026',
+    lastUpdated: '2026',
+    preamble: 'These Terms & Conditions ("Terms") govern the rules and standards for using the Jaladhaara platform, applications, and groundwater survey booking services. By accessing or using the platform, registering an account, or requesting a survey, you confirm that you have read, understood, and agreed to these Terms.',
+    generalTerms: '',
+    termsOfService: '',
   });
 
   useEffect(() => {
@@ -87,29 +92,35 @@ export default function TermsPage() {
           getPublicSettings('billing')
         ]);
 
-        if (billingRes.status === 'fulfilled' && billingRes.value?.success && billingRes.value.data?.settings) {
-          const bSettings = billingRes.value.data.settings;
-          const getVal = (k) => bSettings.find(s => s.key === k)?.value;
-          setCompanyInfo({
-            name: getVal('BILLING_COMPANY_NAME') || 'Jaladhaara Groundwater Survey Pvt. Ltd.',
-            address: getVal('BILLING_ADDRESS') || 'Hyderabad, Telangana, India',
-            email: getVal('BILLING_EMAIL') || 'info@jaladhaaraapp.com'
-          });
-        }
+        const pSettings = policyRes.status === 'fulfilled' && policyRes.value?.success ? (policyRes.value.data?.settings || []) : [];
+        const bSettings = billingRes.status === 'fulfilled' && billingRes.value?.success ? (billingRes.value.data?.settings || []) : [];
 
-        if (policyRes.status === 'fulfilled' && policyRes.value?.success && policyRes.value.data?.settings) {
-          const item = policyRes.value.data.settings.find(
-            (s) => s.key === 'terms_of_service' || s.key === 'general_terms'
-          );
-          if (item?.value && item.value.trim().length > 30) {
-            setContentHtml(item.value);
-            return;
-          }
-        }
-        setContentHtml(DEFAULT_TERMS_HTML);
+        const getP = (k) => pSettings.find(s => s.key === k)?.value;
+        const getB = (k) => bSettings.find(s => s.key === k)?.value;
+
+        const companyName = getP('terms_company_name') || getB('BILLING_COMPANY_NAME') || 'Jaladhaara Groundwater Survey Pvt. Ltd.';
+        const address = getP('terms_company_address') || getB('BILLING_ADDRESS') || 'Hyderabad, Telangana, India';
+        const email = getP('terms_contact_email') || getB('BILLING_EMAIL') || 'info@jaladhaaraapp.com';
+        const platform = getP('terms_platform_scope') || 'Jaladhaara (Web, Android & iOS)';
+        const effectiveDate = getP('terms_effective_date') || '01/09/2026';
+        const lastUpdated = getP('terms_last_updated') || new Date().getFullYear().toString();
+        const preamble = getP('terms_preamble') || 'These Terms & Conditions ("Terms") govern the rules and standards for using the Jaladhaara platform, applications, and groundwater survey booking services. By accessing or using the platform, registering an account, or requesting a survey, you confirm that you have read, understood, and agreed to these Terms.';
+        const generalTerms = getP('general_terms') || '';
+        const termsOfService = getP('terms_of_service') || '';
+
+        setDocConfig({
+          platform,
+          companyName,
+          address,
+          email,
+          effectiveDate,
+          lastUpdated,
+          preamble,
+          generalTerms: (generalTerms && generalTerms.trim().length > 15) ? generalTerms : '',
+          termsOfService: (termsOfService && termsOfService.trim().length > 15) ? termsOfService : '',
+        });
       } catch (err) {
         console.error("Failed to load terms:", err);
-        setContentHtml(DEFAULT_TERMS_HTML);
       } finally {
         setLoading(false);
       }
@@ -126,6 +137,8 @@ export default function TermsPage() {
     }
   };
 
+  const hasCustomContent = docConfig.generalTerms || docConfig.termsOfService;
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
       {/* ── Minimalist DoorMeets/DietVala Top Bar ── */}
@@ -140,7 +153,7 @@ export default function TermsPage() {
               <ArrowLeft className="w-5 h-5" />
             </button>
             <h1 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-              Terms & Conditions
+              Terms &amp; Conditions
             </h1>
           </div>
           <span className="text-xs font-semibold text-slate-400 hidden sm:inline">
@@ -169,37 +182,39 @@ export default function TermsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                 <div>
                   <span className="font-semibold text-slate-700">Platform: </span>
-                  <span>Jaladhaara (Web, Android &amp; iOS)</span>
+                  <span>{docConfig.platform}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Legal Entity: </span>
-                  <span>Jaladhaara Groundwater Survey Pvt. Ltd.</span>
+                  <span>{docConfig.companyName}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Registered Office: </span>
-                  <span>Hyderabad, Telangana, India</span>
+                  <span>{docConfig.address}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Contact / Grievance: </span>
-                  <a href="mailto:info@jaladhaaraapp.com" className="text-blue-600 font-semibold underline">
-                    info@jaladhaaraapp.com
+                  <a href={`mailto:${docConfig.email}`} className="text-blue-600 font-semibold underline">
+                    {docConfig.email}
                   </a>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Effective Date: </span>
-                  <span>01/09/2026</span>
+                  <span>{docConfig.effectiveDate}</span>
                 </div>
                 <div>
                   <span className="font-semibold text-slate-700">Last Updated: </span>
-                  <span>2026</span>
+                  <span>{docConfig.lastUpdated}</span>
                 </div>
               </div>
             </div>
 
             {/* Introductory Preamble */}
-            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 pb-5 border-b border-slate-100">
-              These Terms &amp; Conditions ("Terms") govern the rules and standards for using the Jaladhaara platform, applications, and groundwater survey booking services. By accessing or using the platform, registering an account, or requesting a survey, you confirm that you have read, understood, and agreed to these Terms.
-            </p>
+            {docConfig.preamble && (
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-6 pb-5 border-b border-slate-100">
+                {docConfig.preamble}
+              </p>
+            )}
 
             {/* ── Document Body Content ── */}
             {loading ? (
@@ -207,17 +222,49 @@ export default function TermsPage() {
                 <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
                 <span className="text-xs font-semibold">Loading official document...</span>
               </div>
+            ) : hasCustomContent ? (
+              <div className="space-y-8">
+                {docConfig.generalTerms && (
+                  <div>
+                    {docConfig.termsOfService && (
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider mb-3 pb-2 border-b border-slate-200 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        General Terms &amp; Conditions (Login / Registration)
+                      </h3>
+                    )}
+                    <div
+                      className="clean-legal-body text-xs sm:text-sm text-slate-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: docConfig.generalTerms }}
+                    />
+                  </div>
+                )}
+
+                {docConfig.termsOfService && (
+                  <div>
+                    {docConfig.generalTerms && (
+                      <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 uppercase tracking-wider mb-3 pb-2 border-b border-slate-200 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-blue-500"></span>
+                        Terms of Service &amp; Platform Policies
+                      </h3>
+                    )}
+                    <div
+                      className="clean-legal-body text-xs sm:text-sm text-slate-700 leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: docConfig.termsOfService }}
+                    />
+                  </div>
+                )}
+              </div>
             ) : (
               <div
                 className="clean-legal-body text-xs sm:text-sm text-slate-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: contentHtml }}
+                dangerouslySetInnerHTML={{ __html: DEFAULT_TERMS_HTML }}
               />
             )}
           </div>
 
           {/* Simple Bottom Copyright */}
           <div className="text-center py-6 text-xs text-slate-400">
-            &copy; {new Date().getFullYear()} Jaladhaara Groundwater Survey Pvt. Ltd. All rights reserved.
+            &copy; {new Date().getFullYear()} {docConfig.companyName}. All rights reserved.
           </div>
         </div>
       </main>
