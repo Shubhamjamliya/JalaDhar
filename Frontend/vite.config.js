@@ -3,6 +3,15 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { EventEmitter, setMaxListeners } from 'node:events'
+
+// Increase MaxListeners to prevent MaxListenersExceededWarning during concurrent builds
+try {
+  setMaxListeners(50);
+} catch {}
+try {
+  EventEmitter.defaultMaxListeners = 50;
+} catch {}
 
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -104,7 +113,8 @@ export default defineConfig(({ mode }) => ({
         manualChunks: {
           // Vendor chunks
           'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'icons': ['react-icons'],
+          'icons': ['react-icons', 'lucide-react'],
+          'pdf-vendor': ['@react-pdf/renderer'],
           // Module chunks
           'user-module': [
             './src/modules/user/user-pages/UserDashboard',
