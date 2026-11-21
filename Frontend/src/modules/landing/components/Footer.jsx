@@ -69,6 +69,14 @@ export default function Footer({ cms = (path, fallback) => fallback }) {
                       Privacy Policy
                     </Link>
                   </li>
+                  <li>
+                    <Link 
+                      to="/data-deletion" 
+                      className="text-[var(--color-text-secondary)] hover:text-[var(--color-primary)] transition-colors"
+                    >
+                      User Data Deletion
+                    </Link>
+                  </li>
                 </ul>
               </div>
 

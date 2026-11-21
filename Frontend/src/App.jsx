@@ -31,6 +31,7 @@ const FaqsPage = lazy(() => import("./modules/landing/pages/FaqsPage"));
 const ContactPage = lazy(() => import("./modules/landing/pages/ContactPage"));
 const TermsPage = lazy(() => import("./modules/landing/pages/TermsPage"));
 const PrivacyPage = lazy(() => import("./modules/landing/pages/PrivacyPage"));
+const DataDeletionPage = lazy(() => import("./modules/landing/pages/DataDeletionPage"));
 const UserLogin = lazy(() => import("./modules/user/user-pages/UserLogin"));
 const UserSignup = lazy(() => import("./modules/user/user-pages/UserSignup"));
 const UserOTPVerification = lazy(() => import("./modules/user/user-pages/UserOTPVerification"));
@@ -282,6 +283,30 @@ function App() {
                                         element={
                                             <Suspense fallback={<LoadingSpinner />}>
                                                 <PrivacyPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/data-deletion"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <DataDeletionPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/user-data-deletion"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <DataDeletionPage />
+                                            </Suspense>
+                                        }
+                                    />
+                                    <Route
+                                        path="/data-deletion-instructions"
+                                        element={
+                                            <Suspense fallback={<LoadingSpinner />}>
+                                                <DataDeletionPage />
                                             </Suspense>
                                         }
                                     />
@@ -1606,6 +1631,16 @@ function App() {
                                                                             <AdminProtectedRoute requiredPermission="policies">
                                                                                 <Suspense fallback={<LoadingSpinner />}>
                                                                                     <AdminPolicies defaultTab="expert" />
+                                                                                </Suspense>
+                                                                            </AdminProtectedRoute>
+                                                                        }
+                                                                    />
+                                                                    <Route
+                                                                        path="/policies/deletion"
+                                                                        element={
+                                                                            <AdminProtectedRoute requiredPermission="policies">
+                                                                                <Suspense fallback={<LoadingSpinner />}>
+                                                                                    <AdminPolicies defaultTab="deletion" />
                                                                                 </Suspense>
                                                                             </AdminProtectedRoute>
                                                                         }

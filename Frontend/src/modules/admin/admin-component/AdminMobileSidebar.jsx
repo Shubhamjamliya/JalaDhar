@@ -178,7 +178,8 @@ const navSections = [
                     { label: "Terms & Conditions", to: "/admin/policies/legal" },
                     { label: "Privacy Policy", to: "/admin/policies/privacy" },
                     { label: "Cancellation & Refunds", to: "/admin/policies/cancellation" },
-                    { label: "Expert Agreement", to: "/admin/policies/expert" }
+                    { label: "Expert Agreement", to: "/admin/policies/expert" },
+                    { label: "User Data Deletion", to: "/admin/policies/deletion" }
                 ]
             },
             {

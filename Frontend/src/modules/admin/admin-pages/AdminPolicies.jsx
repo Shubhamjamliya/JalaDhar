@@ -13,6 +13,7 @@ import {
   IoWalletOutline,
   IoPersonOutline,
   IoChevronDownOutline,
+  IoTrashOutline,
 } from "react-icons/io5";
 import { getAllSettings, updateMultipleSettings } from "../../../services/adminApi";
 import ErrorMessage from "../../shared/components/ErrorMessage";
@@ -55,6 +56,60 @@ const DEFAULT_POLICIES = {
   remaining_payment_policy: `<ul><li><strong>Remaining Split:</strong> The 60% balance amount is payable after the physical survey visit is completed.</li><li><strong>Report Release:</strong> Survey findings and PDF report will be unlocked upon receipt of full payment.</li></ul>`,
   terms_of_service: `<ol><li>Jaladhaara is a technology platform that connects customers with independent groundwater survey experts.</li><li>Survey services are provided solely by the selected expert. Jaladhaara is not the survey service provider.</li><li>Groundwater occurrence is governed by natural geological conditions. Jaladhaara does not guarantee the successful borewell drilling, groundwater availability, water quantity, or water quality.</li><li>The survey report is a professional opinion based on scientific observations and available data and should not be considered a guarantee of drilling success.</li><li>Customers are responsible for providing the correct survey location, site access, and obtaining any required permissions.</li><li>Jaladhaara is not liable for borewell failure, dry borewells, low yield, drilling costs, financial losses, crop loss, or any indirect or consequential damages.</li><li>Booking, cancellation, refund, and rescheduling are governed by the applicable policies available in the app.</li><li>By proceeding with the booking, you confirm that you have read, understood, and agreed to these Terms and Conditions.</li></ol>`,
   privacy_policy: `<p>Jaladhaara Groundwater Survey Pvt. Ltd. respects your privacy and is committed to protecting your personal information.</p><ol><li>We collect information such as your name, mobile number, email address, survey location, payment details, and other information required to provide our services.</li><li>Your location is used only to facilitate groundwater survey bookings and enable experts to reach the correct survey land.</li><li>Your personal information is shared only with authorised experts, payment service providers, and service partners as necessary to deliver the requested services or comply with applicable laws.</li><li>We use reasonable security measures to protect your personal information from unauthorised access, loss, or misuse.</li><li>We do not sell or rent your personal information to third parties.</li><li>You are responsible for providing accurate information and keeping your account details up to date.</li><li>By using the Jaladhaara app, you consent to the collection, use, storage, and processing of your information in accordance with this Privacy Policy.</li><li>Jaladhaara may update this Privacy Policy from time to time. The latest version will always be available within the app and on our website.</li></ol>`,
+
+  data_deletion_company_name: "",
+  data_deletion_company_address: "",
+  data_deletion_contact_email: "",
+  data_deletion_platform_scope: "Jaladhaara (Web, Android & iOS)",
+  data_deletion_effective_date: "01/09/2026",
+  data_deletion_preamble: `In accordance with Meta Platform Terms, Google Play Policies, and India's Digital Personal Data Protection (DPDP) Act, you have full control over your personal data.`,
+  data_deletion_policy: `<h3>1. HOW TO REQUEST DELETION OF YOUR DATA</h3>
+<p>If you have registered an account on <strong>Jaladhaara</strong> or interacted with our services through Meta (Facebook / Instagram) ads, Facebook Login, or WhatsApp, you can request full erasure of your account and personal information through any of the following methods:</p>
+
+<h4>Method A: Email Our Privacy Desk (Direct &amp; Fast)</h4>
+<p>Send an email from your registered email address or mentioning your registered mobile number:</p>
+<ul>
+  <li><strong>Recipient:</strong> <a href="mailto:billing@jaladhar.com">billing@jaladhar.com</a></li>
+  <li><strong>Subject line:</strong> <code>Data Deletion Request - [Your Phone / Name]</code></li>
+  <li><strong>Details to provide:</strong> Your registered full name, mobile number, and the email address linked to your Jaladhaara account.</li>
+</ul>
+
+<h4>Method B: Disconnect Jaladhaara from Facebook / Meta</h4>
+<p>If you interacted with our platform through your Facebook or Meta account:</p>
+<ol>
+  <li>Go to your Facebook profile's <strong>Settings &amp; Privacy</strong> &gt; <strong>Settings</strong>.</li>
+  <li>Click on <strong>Apps and Websites</strong> in the left menu.</li>
+  <li>Locate <strong>Jaladhaara</strong> in the list of active apps.</li>
+  <li>Click <strong>Remove</strong> to revoke all future access and data sharing permissions.</li>
+  <li>Check the option to delete your activities or data that the app may have interacted with.</li>
+</ol>
+
+<h3>2. WHAT DATA WILL BE DELETED</h3>
+<p>Upon processing your verified request, we permanently delete:</p>
+<ul>
+  <li>Your user account profile (Name, phone number, email address, password hash).</li>
+  <li>GPS coordinates, survey location pins, and survey plot addresses.</li>
+  <li>Uploaded property documents and land survey media photos.</li>
+  <li>Push notification device tokens and communication logs.</li>
+</ul>
+
+<h3>3. DATA RETENTION FOR LEGAL &amp; AUDIT COMPLIANCE</h3>
+<p>In accordance with applicable statutory regulations (including the Indian Companies Act, Goods &amp; Services Tax (GST) laws, and Prevention of Money Laundering rules), completed financial transaction records, tax invoices, and payment receipts must be preserved for statutory audit purposes for the duration mandated by law (generally 7 to 8 years). Such records are strictly restricted from any operational processing or marketing use.</p>
+
+<h3>4. PROCESSING TIMELINE &amp; CONFIRMATION</h3>
+<ul>
+  <li><strong>Acknowledgment:</strong> Your deletion request is acknowledged within <strong>48 hours</strong> of receipt.</li>
+  <li><strong>Completion:</strong> Complete data purge is finalized within <strong>30 calendar days</strong>.</li>
+  <li><strong>Confirmation:</strong> A final written confirmation of data deletion will be emailed to you upon completion.</li>
+</ul>
+
+<h3>5. GRIEVANCE &amp; COMPLIANCE OFFICER</h3>
+<p>For questions or escalations regarding user data protection, contact our Grievance Desk:</p>
+<ul>
+  <li><strong>Email:</strong> <a href="mailto:billing@jaladhar.com">billing@jaladhar.com</a></li>
+  <li><strong>Entity:</strong> JalaDhar Tech Pvt Ltd</li>
+  <li><strong>Office:</strong> 123, Water Tower Complex, Near Borewell Circle, Civil Lines, Raipur, Chhattisgarh - 492001</li>
+</ul>`,
   expert_agreement: `<p><strong>EXPERT SERVICE AGREEMENT</strong></p><p>This Expert Service Agreement is entered into between Jaladhaara Hydrogeological Services Pvt. Ltd. ("Platform") and the registered expert ("Expert") upon acceptance through the Jaladhaara platform.</p><ol><li><strong>Services:</strong> The Expert agrees to provide groundwater survey and hydrogeological assessment services through the Jaladhaara platform as and when bookings are assigned.</li><li><strong>Professional Standards:</strong> The Expert shall conduct all surveys with due diligence, professional expertise, and in accordance with applicable technical standards and guidelines.</li><li><strong>Attendance and Punctuality:</strong> The Expert must arrive at the survey location on the scheduled date and time. In case of unavoidable delays, the Expert must notify the platform immediately.</li><li><strong>Report Submission:</strong> The Expert is required to submit a complete and accurate survey report through the platform within the stipulated time after completing the physical survey.</li><li><strong>Platform Fee:</strong> The Platform retains a service fee as per the current payout policy. The net payout is credited to the Expert registered bank account after deducting applicable charges.</li><li><strong>Code of Conduct:</strong> The Expert must maintain professional conduct at all times, treat customers respectfully, and not solicit offline payments or direct business outside the platform.</li><li><strong>Confidentiality:</strong> The Expert agrees to maintain strict confidentiality of customer data, survey findings, and platform information shared in connection with services.</li><li><strong>Termination:</strong> The Platform reserves the right to suspend or terminate the Expert access in case of misconduct, repeated no-shows, fraudulent activity, or violation of this agreement.</li><li><strong>Dispute Resolution:</strong> Any disputes arising from this agreement shall be subject to the jurisdiction of courts in Raipur, Chhattisgarh.</li><li><strong>Amendments:</strong> Jaladhaara reserves the right to update this agreement from time to time. Continued use of the platform after such changes constitutes acceptance of the revised terms.</li></ol>`,
 };
 
@@ -63,6 +118,7 @@ const TABS = [
   { id: "privacy",      label: "Privacy Policy",         icon: IoShieldCheckmarkOutline, color: "indigo", sectionKey: "privacy"      },
   { id: "cancellation", label: "Cancellation & Refunds", icon: IoCardOutline,            color: "violet", sectionKey: "cancellation" },
   { id: "expert",       label: "Expert Agreement",       icon: IoPersonOutline,          color: "amber",  sectionKey: "expert"       },
+  { id: "deletion",     label: "User Data Deletion",     icon: IoTrashOutline,           color: "rose",   sectionKey: "deletion"     },
 ];
 
 const TAB_COLOR_MAP = {
@@ -70,6 +126,7 @@ const TAB_COLOR_MAP = {
   indigo: { active: "bg-indigo-600 text-white", inactive: "text-slate-600 hover:bg-indigo-50 hover:text-indigo-700", accent: "#4F46E5", bg: "bg-indigo-50", iconColor: "text-indigo-600", border: "border-indigo-100", badge: "bg-indigo-100 text-indigo-700" },
   violet: { active: "bg-violet-600 text-white", inactive: "text-slate-600 hover:bg-violet-50 hover:text-violet-700", accent: "#7C3AED", bg: "bg-violet-50", iconColor: "text-violet-600", border: "border-violet-100", badge: "bg-violet-100 text-violet-700"  },
   amber:  { active: "bg-amber-600 text-white",  inactive: "text-slate-600 hover:bg-amber-50 hover:text-amber-700",   accent: "#D97706", bg: "bg-amber-50",  iconColor: "text-amber-600",  border: "border-amber-100",  badge: "bg-amber-100 text-amber-700"   },
+  rose:   { active: "bg-rose-600 text-white",   inactive: "text-slate-600 hover:bg-rose-50 hover:text-rose-700",     accent: "#E11D48", bg: "bg-rose-50",   iconColor: "text-rose-600",   border: "border-rose-100",   badge: "bg-rose-100 text-rose-700"    },
 };
 
 const HUB_CARDS = [
@@ -77,6 +134,7 @@ const HUB_CARDS = [
   { id: "privacy",      label: "Privacy Policy",         description: "User data collection, storage, sharing policies and GDPR-compliant disclosures",       icon: IoShieldCheckmarkOutline, color: "indigo", badge: "Privacy" },
   { id: "cancellation", label: "Cancellation & Refunds", description: "Booking cancellation rules, refund processing, advance and balance payment policies",   icon: IoCardOutline,            color: "violet", badge: "Finance" },
   { id: "expert",       label: "Expert Agreement",       description: "Service agreement shown to experts before onboarding — conduct, payouts and terms",      icon: IoPersonOutline,          color: "amber",  badge: "Expert"  },
+  { id: "deletion",     label: "User Data Deletion",     description: "Meta & DPDP compliant user account deletion instructions, methods, and retention rules", icon: IoTrashOutline,           color: "rose",   badge: "Compliance" },
 ];
 
 function PolicyBlock({ label, description, value, onChange, placeholder }) {
@@ -236,18 +294,35 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
     privacy: { saving: false, saved: false },
     cancellation: { saving: false, saved: false },
     expert: { saving: false, saved: false },
+    deletion: { saving: false, saved: false },
   });
 
   useEffect(() => {
     const load = async () => {
       try {
         setLoading(true);
-        const res = await getAllSettings("policy");
-        if (res.success && res.data?.settings) {
-          const map = {};
-          res.data.settings.forEach((s) => { if (s.value !== undefined && s.value !== null && s.value !== "") map[s.key] = s.value; });
-          setPolicySettings((prev) => ({ ...DEFAULT_POLICIES, ...map }));
+        const [policyRes, billingRes] = await Promise.allSettled([
+          getAllSettings("policy"),
+          getAllSettings("billing"),
+        ]);
+        const map = {};
+        if (policyRes.status === "fulfilled" && policyRes.value?.success && policyRes.value.data?.settings) {
+          policyRes.value.data.settings.forEach((s) => {
+            if (s.value !== undefined && s.value !== null && s.value !== "") map[s.key] = s.value;
+          });
         }
+        if (billingRes.status === "fulfilled" && billingRes.value?.success && billingRes.value.data?.settings) {
+          const bSettings = billingRes.value.data.settings;
+          const getB = (k) => bSettings.find((s) => s.key === k)?.value;
+          const billingCompany = getB("BILLING_COMPANY_NAME");
+          const billingAddress = getB("BILLING_ADDRESS");
+          const billingEmail = getB("BILLING_EMAIL");
+
+          if (!map.data_deletion_company_name && billingCompany) map.data_deletion_company_name = billingCompany;
+          if (!map.data_deletion_company_address && billingAddress) map.data_deletion_company_address = billingAddress;
+          if (!map.data_deletion_contact_email && billingEmail) map.data_deletion_contact_email = billingEmail;
+        }
+        setPolicySettings((prev) => ({ ...DEFAULT_POLICIES, ...map }));
       } catch (err) {
         setError("Failed to load policy settings. Please refresh the page.");
       } finally {
@@ -267,6 +342,10 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
         "privacy_policy", "privacy_company_name", "privacy_company_address",
         "privacy_contact_email", "privacy_platform_scope", "privacy_effective_date", "privacy_preamble"
       ].includes(key) ? "privacy"
+      : [
+        "data_deletion_policy", "data_deletion_company_name", "data_deletion_company_address",
+        "data_deletion_contact_email", "data_deletion_platform_scope", "data_deletion_effective_date", "data_deletion_preamble"
+      ].includes(key) ? "deletion"
       : ["checkout_policy","booking_policy","cancellation_policy","advance_payment_policy","remaining_payment_policy","refund_policy"].includes(key) ? "cancellation"
       : ["expert_agreement"].includes(key) ? "expert" : null;
     if (sk) setSectionState((prev) => ({ ...prev, [sk]: { ...prev[sk], saved: false } }));
@@ -305,6 +384,15 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
           { key: "refund_policy", value: policySettings.refund_policy },
         ],
         expert: [{ key: "expert_agreement", value: policySettings.expert_agreement }],
+        deletion: [
+          { key: "data_deletion_company_name", value: policySettings.data_deletion_company_name || "" },
+          { key: "data_deletion_company_address", value: policySettings.data_deletion_company_address || "" },
+          { key: "data_deletion_contact_email", value: policySettings.data_deletion_contact_email || "" },
+          { key: "data_deletion_platform_scope", value: policySettings.data_deletion_platform_scope || "Jaladhaara (Web, Android & iOS)" },
+          { key: "data_deletion_effective_date", value: policySettings.data_deletion_effective_date || "01/09/2026" },
+          { key: "data_deletion_preamble", value: policySettings.data_deletion_preamble || "" },
+          { key: "data_deletion_policy", value: policySettings.data_deletion_policy || "" },
+        ],
       };
       const res = await updateMultipleSettings(settingsMap[section] || []);
       if (res.success) {
@@ -529,6 +617,44 @@ export default function AdminPolicies({ defaultTab = "hub" }) {
                 </div>
               </div>
               <PolicyBlock label="Expert Service Agreement" description="Full agreement text — covers services, professional standards, payouts, code of conduct and termination." value={policySettings.expert_agreement} onChange={(v) => patch("expert_agreement", v)} placeholder="Write the expert service agreement here…" />
+            </SectionCard>
+          )}
+
+          {/* User Data Deletion */}
+          {activeTab === "deletion" && (
+            <SectionCard title="User Data Deletion Instructions" description="Meta Platform, Google Play and DPDP Act compliance instructions for deleting user account & personal data" icon={IoTrashOutline} color="rose" onSave={() => saveSection("deletion")} saving={saving} saved={saved}>
+              <DocumentMetaBlock
+                docName="User Data Deletion"
+                platform={policySettings.data_deletion_platform_scope}
+                onPlatformChange={(v) => patch("data_deletion_platform_scope", v)}
+                effectiveDate={policySettings.data_deletion_effective_date}
+                onEffectiveDateChange={(v) => patch("data_deletion_effective_date", v)}
+                companyName={policySettings.data_deletion_company_name}
+                onCompanyNameChange={(v) => patch("data_deletion_company_name", v)}
+                address={policySettings.data_deletion_company_address}
+                onAddressChange={(v) => patch("data_deletion_company_address", v)}
+                email={policySettings.data_deletion_contact_email}
+                onEmailChange={(v) => patch("data_deletion_contact_email", v)}
+                preamble={policySettings.data_deletion_preamble}
+                onPreambleChange={(v) => patch("data_deletion_preamble", v)}
+              />
+              <div className="border-t border-dashed border-slate-200" />
+              <div className="flex items-start gap-3 p-4 bg-rose-50 border border-rose-200 rounded-2xl">
+                <IoTrashOutline className="text-rose-600 text-xl shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-bold text-rose-800 mb-0.5">Meta &amp; Google Store Compliance Requirement</p>
+                  <p className="text-xs text-rose-700 leading-relaxed">
+                    This public page is hosted at <strong>/data-deletion</strong> and submitted to the Meta Developer Dashboard. Users can view instructions on how to request account erasure, email support, revoke Facebook permissions, and understand legal data retention windows.
+                  </p>
+                </div>
+              </div>
+              <PolicyBlock
+                label="User Data Deletion Policy &amp; Instructions"
+                description="Edit the complete step-by-step instructions, deletion methods, timelines, and retention rules shown on the public /data-deletion page."
+                value={policySettings.data_deletion_policy}
+                onChange={(v) => patch("data_deletion_policy", v)}
+                placeholder="Write your user data deletion instructions here…"
+              />
             </SectionCard>
           )}
         </div>
