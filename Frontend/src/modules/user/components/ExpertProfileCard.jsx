@@ -72,6 +72,9 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
 
   const price = expert.servicePrice || expert.minPrice || selectedService?.price || 3500;
   const expertId = expert.expertId || (expert._id ? `EXP-${expert._id.toString().slice(-6).toUpperCase()}` : null);
+  const isVerifiedExpert =
+    expert.isApproved === true ||
+    ['APPROVED', 'ACTIVATED', 'VERIFIED'].includes(expert.verificationStatus);
 
   return (
     <div
@@ -92,9 +95,11 @@ const ExpertProfileCard = ({ expert, selectedService, onSelect, actionLabel = "S
               <span className="text-2xl">👨‍🔧</span>
             )}
           </div>
-          <div className="absolute -bottom-1 -right-1 bg-[#0A84FF] text-white p-0.5 rounded-full shadow-xs border border-white" title="Verified Hydrogeologist Expert">
-            <IoShieldCheckmarkOutline className="text-[10px]" />
-          </div>
+          {isVerifiedExpert && (
+            <div className="absolute -bottom-1 -right-1 bg-[#0A84FF] text-white p-0.5 rounded-full shadow-xs border border-white" title="Verified Hydrogeologist Expert">
+              <IoShieldCheckmarkOutline className="text-[10px]" />
+            </div>
+          )}
         </div>
 
         {/* Name, Designation, Rating & Distance */}

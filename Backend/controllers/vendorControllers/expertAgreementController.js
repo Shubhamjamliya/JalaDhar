@@ -101,6 +101,24 @@ const acceptExpertAgreement = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Vendor/Expert account not found' });
     }
 
+    if (vendor.isActive === false) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is currently inactive or suspended.'
+      });
+    }
+
+    const allowedStatuses = ['VERIFIED_PENDING_AGREEMENT', 'ACTIVATED', 'APPROVED'];
+    const canAcceptAgreement =
+      allowedStatuses.includes(vendor.verificationStatus) || vendor.isApproved === true;
+
+    if (!canAcceptAgreement) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your KYC application must be reviewed and approved by an admin before accepting the expert agreement.'
+      });
+    }
+
     const versionSetting = await Settings.findOne({ key: 'expert_onboarding_agreement_version' });
     const activeVersion = versionSetting ? versionSetting.value : 'v1.0';
 

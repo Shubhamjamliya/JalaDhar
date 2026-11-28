@@ -34,14 +34,13 @@ const getAvailableVendors = async (req, res) => {
 
     // Find all active and approved vendors offering this service
     const vendors = await Vendor.find({
-      isActive: { $ne: false },
-      $or: [
-        { isApproved: true },
-        { verificationStatus: { $in: ['APPROVED', 'ACTIVATED', 'VERIFIED'] } },
-        { isApproved: { $exists: false } }
-      ],
+      isActive: true,
+      isApproved: true,
+      verificationStatus: {
+        $nin: ['APPLICATION_SUBMITTED', 'PENDING', 'MORE_DOCS_NEEDED', 'VERIFIED_PENDING_AGREEMENT', 'REJECTED']
+      },
       services: serviceId
-    }).select('name email phone experience rating address workingDays workingHours aboutExpert languages availableServices instruments isOnline pausedUntil pauseReason lastOnlineAt lastOfflineAt');
+    }).select('name email phone experience rating address workingDays workingHours aboutExpert languages availableServices instruments isApproved verificationStatus expertId isOnline pausedUntil pauseReason lastOnlineAt lastOfflineAt');
 
     // Calculate distance and sort vendors
     const vendorsWithDistance = vendors.map(vendor => {
@@ -1228,17 +1227,16 @@ const getNearbyVendors = async (req, res) => {
     }
 
     const query = {
-      isActive: { $ne: false },
-      $or: [
-        { isApproved: true },
-        { verificationStatus: { $in: ['APPROVED', 'ACTIVATED', 'VERIFIED'] } },
-        { isApproved: { $exists: false } }
-      ]
+      isActive: true,
+      isApproved: true,
+      verificationStatus: {
+        $nin: ['APPLICATION_SUBMITTED', 'PENDING', 'MORE_DOCS_NEEDED', 'VERIFIED_PENDING_AGREEMENT', 'REJECTED']
+      }
     };
 
     // First, get all vendors with services populated (no status filter - show all services)
     const vendors = await Vendor.find(query)
-      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted rating bookingStats serviceAreas designation address location services servicePrice machineType workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates isOnline pausedUntil pauseReason lastOnlineAt lastOfflineAt')
+      .select('name email phone experience experienceDetails designation education institution graduationYear specialization surveysCompleted rating bookingStats serviceAreas designation address location services servicePrice machineType workingDays workingHours aboutExpert languages availableServices instruments district state serviceRadius willingToTravel modeOfTravel travelChargesPerKm multipleStates isApproved verificationStatus expertId isOnline pausedUntil pauseReason lastOnlineAt lastOfflineAt')
       .populate({
         path: 'services',
         // Removed match filter - show all services regardless of status
